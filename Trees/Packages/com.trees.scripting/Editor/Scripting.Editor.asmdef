@@ -1,0 +1,16 @@
+﻿{
+    "name": "Scripting.Editor",
+    "rootNamespace": "Scripting",
+    "references": [
+        "GUID:86c838b68ef25a54c830e650d47ef987"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

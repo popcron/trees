@@ -1,0 +1,23 @@
+# Unity
+Trees/Library/**
+Trees/UserSettings/**
+Trees/Temp/**
+Trees/Logs/**
+Trees/UIElementsSchema/**
+Trees/Assets/Generated Code/**
+Trees/Assets/Generated Code.meta
+Trees/*.csproj
+Trees/*.slnx
+
+# Blender
+*.blend1
+*.blend1.meta
+
+# Visual studio
+**/.vs/**
+
+# VSCode
+**/.vscode/**
+
+# Assistant workfiles
+CLAUDE.md
