@@ -1,10 +1,14 @@
 ﻿using System;
+using System.Collections.Generic;
 
 public static class TypeExtensions
 {
-    public static ulong GetLongHashCode(this Type type)
+    public static readonly Dictionary<ulong, Type> types = new();
+
+    public static ulong GetID(this Type type)
     {
-        string fullName = type.FullName ?? type.Name;
-        return fullName.AsSpan().GetLongHashCode();
+        ulong hash = type.FullName.AsSpan().GetDJB2Hash();
+        types[hash] = type;
+        return hash;
     }
 }

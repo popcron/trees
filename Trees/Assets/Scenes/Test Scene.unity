@@ -298,11 +298,9 @@ MonoBehaviour:
   dolorSitAmet:
     content: 
   theFloater: 0
-  componentType:
-    value: 10315179320196999047
+  componentType: 6384618917
   the: 0
-  anyType:
-    value: 3710261673913115680
+  anyType: 9557651701529314812
   position: {x: 0, y: 0, z: 0}
   colorful:
     content: '"#FF0000"'

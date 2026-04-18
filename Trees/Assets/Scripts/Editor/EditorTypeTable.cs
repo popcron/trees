@@ -9,7 +9,6 @@ public static class EditorTypeTable
 
     static EditorTypeTable()
     {
-        TypeTable.fallback = TryGet;
     }
 
     public static Type[] GetTypesDerivedFrom(Type deriveFrom)
@@ -30,10 +29,5 @@ public static class EditorTypeTable
         }
 
         return optionsArray;
-    }
-
-    public static bool TryGet(ulong key, out Type type)
-    {
-        return AllTypes.map.TryGetValue(key, out type);
     }
 }

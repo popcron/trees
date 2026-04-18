@@ -14,10 +14,10 @@ namespace GOAP
             }
         }
 
-        public static bool TryPlan(WorldState current, IEnumerable<TypeID> goalFacts, List<Action> plan, int maxDepth = 20)
+        public static bool TryPlan(WorldState current, IEnumerable<ulong> goalFacts, List<Action> plan, int maxDepth = 20)
         {
-            HashSet<TypeID> need = new();
-            foreach (TypeID f in goalFacts)
+            HashSet<ulong> need = new();
+            foreach (ulong f in goalFacts)
             {
                 if (!current.Has(f))
                 {
@@ -40,7 +40,7 @@ namespace GOAP
             return true;
         }
 
-        private static List<Action> Search(WorldState current, HashSet<TypeID> need, int depth, int maxDepth)
+        private static List<Action> Search(WorldState current, HashSet<ulong> need, int depth, int maxDepth)
         {
             if (need.Count == 0)
             {
@@ -59,7 +59,7 @@ namespace GOAP
             {
                 Action action = actions[i];
                 bool helps = false;
-                foreach (var eff in action.addFacts)
+                foreach (ulong eff in action.addFacts)
                 {
                     if (need.Contains(eff))
                     {
@@ -74,7 +74,7 @@ namespace GOAP
                 }
 
                 bool conflicts = false;
-                foreach (var rem in action.removeFacts)
+                foreach (ulong rem in action.removeFacts)
                 {
                     if (need.Contains(rem))
                     {
@@ -88,13 +88,13 @@ namespace GOAP
                     continue;
                 }
 
-                HashSet<TypeID> newNeed = new(need);
-                foreach (var eff in action.addFacts)
+                HashSet<ulong> newNeed = new(need);
+                foreach (ulong eff in action.addFacts)
                 {
                     newNeed.Remove(eff);
                 }
 
-                foreach (var pre in action.preConditionFacts)
+                foreach (ulong pre in action.preConditionFacts)
                 {
                     if (!current.Has(pre))
                     {

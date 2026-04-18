@@ -31,7 +31,7 @@ public static class AllTypes
                     if (!type.IsAbstract && !type.IsInterface && type.IsPublic)
                     {
                         list.Add(type);
-                        map[type.GetLongHashCode()] = type;
+                        map[type.GetID()] = type;
                     }
                 }
             }

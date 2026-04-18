@@ -8,9 +8,15 @@ public class TypeSelector : MonoBehaviour
     public bool misterBoolean;
     public SourceCode<int> dolorSitAmet;
     public float theFloater;
-    public TypeID<BaseBehaviour> componentType;
+
+    [TypeDropdown(typeof(BaseBehaviour))]
+    public ulong componentType;
+
     public byte the;
-    public TypeID anyType;
+
+    [TypeDropdown]
+    public ulong anyType;
+
     public Vector3 position;
     public SourceCode<Color> colorful = Color.red;
 

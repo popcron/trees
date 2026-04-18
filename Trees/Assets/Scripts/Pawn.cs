@@ -2,7 +2,6 @@
 using UnityEngine;
 using UnityEngine.Rendering.Universal;
 
-[ExecuteAlways]
 public class Pawn : BaseBehaviour
 {
     public const float GroundOffset = 0.495f;

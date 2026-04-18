@@ -6,46 +6,46 @@ namespace GOAP
     [Serializable]
     public class WorldState
     {
-        public List<TypeID> facts = new();
+        public List<ulong> facts = new();
 
         public WorldState()
         {
-            facts = new List<TypeID>();
+            facts = new List<ulong>();
         }
 
         public WorldState(WorldState src)
         {
-            facts = new List<TypeID>(src.facts);
+            facts = new List<ulong>(src.facts);
         }
 
-        public bool Has(TypeID factType)
+        public bool Has(ulong factType)
         {
             return facts.Contains(factType);
         }
 
         public bool Has<T>() where T : Fact
         {
-            return facts.Contains(typeof(T));
+            return facts.Contains(typeof(T).GetID());
         }
 
-        public void Add(TypeID factType)
+        public void Add(ulong factType)
         {
             facts.Add(factType);
         }
 
         public void Add<T>() where T : Fact
         {
-            facts.Add(typeof(T));
+            facts.Add(typeof(T).GetID());
         }
 
-        public void Remove(TypeID factType)
+        public void Remove(ulong factType)
         {
             facts.Remove(factType);
         }
 
         public void Remove<T>() where T : Fact
         {
-            facts.Remove(typeof(T));
+            facts.Remove(typeof(T).GetID());
         }
     }
 }

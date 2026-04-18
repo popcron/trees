@@ -6,7 +6,7 @@ using Action = GOAP.Action;
 
 public class ActionRegistry : TypeRegistry<ActionHandler>
 {
-    private static readonly Dictionary<TypeID, ActionHandler> handlers = new();
+    private static readonly Dictionary<ulong, ActionHandler> handlers = new();
     private static Action[] actions = { };
     private static int layerCount = 1;
 
@@ -39,8 +39,9 @@ public class ActionRegistry : TypeRegistry<ActionHandler>
             Type actionType = actionHandler.ActionType;
             Action action = (Action)Activator.CreateInstance(actionType);
             actionList.Add(action);
-            TypeID id = new(actionType);
-            handlers.Add(id, actionHandler);
+            ulong hash = actionType.GetID();
+            TypeExtensions.types[hash] = actionType;
+            handlers.Add(hash, actionHandler);
             maxLayer = Math.Max(maxLayer, action.layer);
         }
 
@@ -49,13 +50,13 @@ public class ActionRegistry : TypeRegistry<ActionHandler>
         layerCount = maxLayer + 1;
     }
 
-    public static ActionHandler GetHandler(TypeID actionType)
+    public static ActionHandler GetHandler(Type actionType)
     {
-        return handlers[actionType];
+        return handlers[actionType.GetID()];
     }
 
-    public static bool TryGetHandler(TypeID actionType, out ActionHandler handler)
+    public static bool TryGetHandler(Type actionType, out ActionHandler handler)
     {
-        return handlers.TryGetValue(actionType, out handler);
+        return handlers.TryGetValue(actionType.GetID(), out handler);
     }
 }

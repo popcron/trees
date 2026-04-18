@@ -6,11 +6,12 @@ namespace GOAP
     [Serializable]
     public class Goal
     {
-        public List<TypeID> wants = new();
+        [TypeDropdown(typeof(Fact))]
+        public List<ulong> wants = new();
 
         public void Wants<T>() where T : Fact
         {
-            wants.Add(typeof(T));
+            wants.Add(typeof(T).GetID());
         }
     }
 }

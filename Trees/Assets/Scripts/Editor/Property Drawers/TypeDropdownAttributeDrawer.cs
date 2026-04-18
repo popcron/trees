@@ -5,20 +5,15 @@ using UnityEditor.IMGUI.Controls;
 using UnityEngine;
 using UnityEngine.UIElements;
 
-[CustomPropertyDrawer(typeof(TypeID))]
-[CustomPropertyDrawer(typeof(TypeID<>))]
-public class TypeIDDrawer : PropertyDrawer
+[CustomPropertyDrawer(typeof(TypeDropdownAttribute))]
+public class TypeDropdownAttributeDrawer : PropertyDrawer
 {
     public override VisualElement CreatePropertyGUI(SerializedProperty property)
     {
-        Type deriveFrom = null;
-        Type fieldType = fieldInfo.FieldType;
-        if (fieldType.IsGenericType && fieldType.GetGenericTypeDefinition() == typeof(TypeID<>))
-        {
-            deriveFrom = fieldType.GetGenericArguments()[0];
-        }
+        TypeDropdownAttribute typeDropdown = (TypeDropdownAttribute)attribute;
+        Type deriveFrom = typeDropdown.deriveFrom;
 
-        SerializedProperty value = property.FindPropertyRelative(nameof(TypeID.value));
+        SerializedProperty value = property;
         Type[] allOptions = deriveFrom == null ? AllTypes.array : EditorTypeTable.GetTypesDerivedFrom(deriveFrom);
 
         VisualElement container = new();
@@ -45,7 +40,9 @@ public class TypeIDDrawer : PropertyDrawer
                 }
                 else
                 {
-                    value.ulongValue = TypeTable.AddOrSet(selectedType);
+                    ulong hash = selectedType.GetID();
+                    value.ulongValue = hash;
+                    TypeExtensions.types[hash] = selectedType;
                 }
 
                 value.serializedObject.ApplyModifiedProperties();
@@ -89,9 +86,9 @@ public class TypeIDDrawer : PropertyDrawer
         for (int i = 0; i < options.Length; i++)
         {
             Type type = options[i];
-            if (type.GetLongHashCode() == hash)
+            if (type.GetID() == hash)
             {
-                TypeTable.AddOrSet(type);
+                TypeExtensions.types[hash] = type;
                 return type;
             }
         }

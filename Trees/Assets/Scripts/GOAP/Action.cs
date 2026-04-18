@@ -6,15 +6,21 @@ namespace GOAP
     [Serializable]
     public class Action
     {
-        public List<TypeID> preConditionFacts = new();
-        public List<TypeID> addFacts = new();
-        public List<TypeID> removeFacts = new();
+        [TypeDropdown(typeof(Fact))]
+        public List<ulong> preConditionFacts = new();
+
+        [TypeDropdown(typeof(Fact))]
+        public List<ulong> addFacts = new();
+
+        [TypeDropdown(typeof(Fact))]
+        public List<ulong> removeFacts = new();
+
         public float cost;
         public int layer;
 
         public void AddFact<T>() where T : Fact
         {
-            addFacts.Add(typeof(T));
+            addFacts.Add(typeof(T).GetID());
         }
     }
 }

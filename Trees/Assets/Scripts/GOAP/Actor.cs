@@ -43,12 +43,12 @@ namespace GOAP
                     activeGoal = layer.TopGoal;
                     if (handler.TryComplete(this, layer, activeGoal, action, delta))
                     {
-                        foreach (TypeID t in action.removeFacts)
+                        foreach (ulong t in action.removeFacts)
                         {
                             state.Remove(t);
                         }
 
-                        foreach (TypeID t in action.addFacts)
+                        foreach (ulong t in action.addFacts)
                         {
                             state.Add(t);
                         }
@@ -64,7 +64,7 @@ namespace GOAP
 
         public bool SubmitGoal<T>(T goal) where T : Goal
         {
-            foreach (TypeID wants in goal.wants)
+            foreach (ulong wants in goal.wants)
             {
                 state.Remove(wants);
             }
@@ -117,7 +117,7 @@ namespace GOAP
 
         public bool DispatchSubGoal<T>(Layer layer, T goal) where T : Goal
         {
-            foreach (TypeID wants in goal.wants)
+            foreach (ulong wants in goal.wants)
             {
                 state.Remove(wants);
             }
