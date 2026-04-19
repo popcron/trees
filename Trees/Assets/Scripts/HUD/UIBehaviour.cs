@@ -9,6 +9,8 @@ namespace UI
     {
         public static readonly Vector3[] corners = new Vector3[4];
 
+        public bool alwaysUpdate;
+
         public RectTransform rectTransform => (RectTransform)transform;
 
         protected virtual void OnEnable()
@@ -44,7 +46,15 @@ namespace UI
         {
             if (UIEngine.map.TryGetValue(this, out VisualElement root))
             {
-                UpdateTransform(root);
+                if (alwaysUpdate)
+                {
+                    UpdateGUI(root);
+                }
+                else
+                {
+                    UpdateTransform(root);
+                }
+
                 UIEngine.repaint = true;
             }
         }
