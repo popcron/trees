@@ -1,5 +1,6 @@
-﻿using GOAP;
+using GOAP;
 using UnityEngine;
+using UnityEngine.AI;
 
 public class NavigateToHandler : ActionHandler<NavigateTo>
 {
@@ -8,12 +9,14 @@ public class NavigateToHandler : ActionHandler<NavigateTo>
         if (activeGoal is TryToReach goal)
         {
             Unit unit = actor.GetComponent<Unit>();
-            if (unit.Agent.TryResolve(unit.rigidbody, goal.destination, delta, out Vector2 move))
+            NavMeshAgent navAgent = unit.agent.agent;
+            navAgent.SetDestination(goal.destination);
+
+            if (navAgent.pathPending || navAgent.remainingDistance > navAgent.stoppingDistance)
             {
-                unit.actor.DispatchSubGoal(layer, new Move(move));
                 if (!actor.layers[1].IsActive || actor.layers[1].TopGoal is LookAtNavigationTarget)
                 {
-                    Vector3 moveDirection = unit.rigidbody.linearVelocity.normalized;
+                    Vector3 moveDirection = unit.agent.rigidbody.linearVelocity.normalized;
                     if (moveDirection.sqrMagnitude > unit.maxSpeed * 0.3f)
                     {
                         moveDirection.y *= 0.5f;

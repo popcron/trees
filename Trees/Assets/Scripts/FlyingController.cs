@@ -10,6 +10,7 @@ public class FlyingController : MonoBehaviour
     public float slowSpeedMultiplier = 0.4f;
     public float slowAccelerationMultiplier = 0.4f;
     public float slowLookSpeedMultiplier = 0.4f;
+    public bool lockCursor;
 
     private float pitch;
     private float yaw;
@@ -29,6 +30,17 @@ public class FlyingController : MonoBehaviour
 
     private void Update()
     {
+        if (lockCursor)
+        {
+            Cursor.lockState = CursorLockMode.Locked;
+            Cursor.visible = false;
+        }
+        else
+        {
+            Cursor.lockState = CursorLockMode.None;
+            Cursor.visible = true;
+        }
+
         PlayerInputState input = PlayerInputState.Get();
         float delta = Time.deltaTime;
         float speed = maxSpeed;

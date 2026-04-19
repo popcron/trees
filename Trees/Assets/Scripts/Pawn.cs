@@ -148,6 +148,11 @@ public class Pawn : BaseBehaviour
 
     private Vector2 GetPitchYawVariation()
     {
+        if (!Application.isPlaying)
+        {
+            return default;
+        }
+
         if (Time.time > nextEyeVariation)
         {
             RandomGenerator rng = new(GetEntityId().GetLongHashCode());

@@ -32,18 +32,19 @@ There is a cinemachine camera setup here to switch between spectator camera, and
 camera. A few interpreted script components are here to control this. UIToolkit stuff is
 present here too. 
 
-### Pathfinding
+### Rigidbody NavMesh Agents
 
 ![pathfinding](Docs/pathfinding.png)
 
-| In `Assets/Scripts/Pathfinding.cs`
+| In `Assets/Scripts/RigidbodyAgent.cs`
 
-The built in navigation system is used for this, but the paths are followed
-using physics. Hence the generous dense matter in that file. 
+Call `agent.SetDestination()` as you normally would, and the rigidbody will try
+its best to reach.
 
-Agents need to be registered, and unregistered with this class. Once
-registered, `TryResolve()` can be called and that will retrieve the 
-Vector2 move instruction.
+Sometimes the positions of the rigidbody and the agent disagree. In these cases,
+the agent warps to the rigidbody so that the agent tries again but from the rigidbody's
+startign point. Effectivelly, the rigidbody is what takes priority here.
+This makes it possible for an agent to retry, but also get stuck in unrecoverable geometry.
 
 ### Scripting
 

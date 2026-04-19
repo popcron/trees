@@ -43,9 +43,11 @@ public class GoalDispatcher : BaseBehaviour
                     {
                         Unit unit = selectedUnits[i];
                         Vector3 unitDestination = destination;
-                        unitDestination.x += positions[i].x;
-                        unitDestination.z += positions[i].y;
-                        unitDestination.y += unit.settings.baseOffset;
+                        Vector2 circlePosition = positions[i];
+                        Vector3 worldCirclePosition = Quaternion.Euler(0f, mainCamera.transform.eulerAngles.y, 0f) * new Vector3(circlePosition.x, 0f, circlePosition.y);
+                        unitDestination.x += worldCirclePosition.x;
+                        unitDestination.z += worldCirclePosition.z;
+                        unitDestination.y += unit.agent.agent.baseOffset;
                         unit.actor.SubmitGoal(new TryToReach(unitDestination));
                     }
 

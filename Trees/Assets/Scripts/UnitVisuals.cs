@@ -17,20 +17,30 @@ public class UnitVisuals : MonoBehaviour
         bool isFocalPoint = Program.focalPoint == unit;
         int defaultLayer = LayerMask.NameToLayer("Default");
         int focalPointLayer = LayerMask.NameToLayer("Focal Point");
+        int layer = isFocalPoint ? focalPointLayer : defaultLayer;
         foreach (PawnPart part in pawn.Parts)
         {
             part.Color = unit.color;
-            part.renderer.gameObject.layer = isFocalPoint ? focalPointLayer : defaultLayer;
+            if (part.renderer.gameObject.layer != layer)
+            {
+                part.renderer.gameObject.layer = layer;
+            }
         }
 
         foreach (Renderer eyeRenderer in pawn.body.head.leftEye.renderers)
         {
-            eyeRenderer.gameObject.layer = isFocalPoint ? focalPointLayer : defaultLayer;
+            if (eyeRenderer.gameObject.layer != layer)
+            {
+                eyeRenderer.gameObject.layer = layer;
+            }
         }
 
         foreach (Renderer eyeRenderer in pawn.body.head.rightEye.renderers)
         {
-            eyeRenderer.gameObject.layer = isFocalPoint ? focalPointLayer : defaultLayer;
+            if (eyeRenderer.gameObject.layer != layer)
+            {
+                eyeRenderer.gameObject.layer = layer;
+            }
         }
 
         pawn.eyePitchYaw = unit.eyePitchYaw;

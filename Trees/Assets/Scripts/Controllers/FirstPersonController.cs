@@ -11,10 +11,7 @@ public class FirstPersonController : MonoBehaviour
         }
 
         PlayerInputState input = PlayerInputState.Get();
-        if (input.movement != Vector2.zero)
-        {
-            unit.actor.SubmitGoal(new Strafe(input.movement));
-        }
+        unit.actor.SubmitGoal(new Strafe(input.movement));
 
         if (input.look != Vector2.zero)
         {

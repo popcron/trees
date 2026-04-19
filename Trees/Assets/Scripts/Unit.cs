@@ -2,18 +2,19 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-[RequireComponent(typeof(Rigidbody))]
+[RequireComponent(typeof(Actor))]
+[RequireComponent(typeof(RigidbodyAgent))]
 public class Unit : BaseBehaviour
 {
     public static readonly List<Unit> all = new();
 
     public Actor actor;
+    public RigidbodyAgent agent;
     public Transform head;
     public Color color = Color.white;
     public ControlFlags controlFlags;
     public Vector2 input;
     public bool grounded;
-    public Rigidbody rigidbody;
     public float bodyYaw;
     public Vector2 headPitchYaw;
     public Vector2 eyePitchYaw;
@@ -26,11 +27,7 @@ public class Unit : BaseBehaviour
     public float groundDistance = 0.1f;
     public LayerMask groundLayerMask = ~0;
     public float groundCheckCooldown;
-    public Pathfinding.Settings settings = new();
 
-    private Pathfinding.Agent agent;
-
-    public Pathfinding.Agent Agent => agent;
     public Quaternion LookRotation
     {
         get
@@ -44,19 +41,18 @@ public class Unit : BaseBehaviour
 
     private void Reset()
     {
-        rigidbody = GetComponent<Rigidbody>();
+        actor = GetComponent<Actor>();
+        agent = GetComponent<RigidbodyAgent>();
     }
 
     protected override void OnEnable()
     {
         base.OnEnable();
         all.Add(this);
-        agent = Pathfinding.Register(rigidbody.GetEntityId(), settings);
     }
 
     protected override void OnDisable()
     {
-        Pathfinding.Unregister(rigidbody.GetEntityId());
         all.Remove(this);
         base.OnDisable();
     }
@@ -104,7 +100,6 @@ public class Unit : BaseBehaviour
         float delta = Time.fixedDeltaTime;
         input = Vector2.zero;
         actor.Act(delta);
-        DrivePhysics(delta);
         CheckIfGrounded(delta);
     }
 
@@ -116,39 +111,5 @@ public class Unit : BaseBehaviour
             groundCheckCooldown = 0f;
             grounded = TryGetGroundHit(out _);
         }
-    }
-
-    public void DrivePhysics(float delta)
-    {
-        Vector3 currentVelocity = rigidbody.linearVelocity;
-        Vector3 desiredVelocity = new Vector3(input.x, 0f, input.y) * maxSpeed;
-        Vector3 horizontalCurrent = new Vector3(currentVelocity.x, 0f, currentVelocity.z);
-        Vector3 velocityError = desiredVelocity - horizontalCurrent;
-        float mass = rigidbody.mass;
-        Vector3 force = velocityError * (mass / delta);
-        float maxForce = mass * maxAcceleration;
-        force = Vector3.ClampMagnitude(force, maxForce);
-        rigidbody.AddForce(force, ForceMode.Force);
-
-        if (jump)
-        {
-            jump = false;
-            grounded = false;
-            groundCheckCooldown = 0.25f;
-            Vector3 jumpVelocity = rigidbody.linearVelocity;
-            jumpVelocity.y = Mathf.Sqrt(2f * maxJumpHeight * Physics.gravity.magnitude);
-            rigidbody.linearVelocity = jumpVelocity;
-        }
-    }
-
-    private static Layer[] CreateLayers()
-    {
-        Layer[] array = new Layer[ActionRegistry.LayerCount];
-        for (int i = 0; i < array.Length; i++)
-        {
-            array[i] = new();
-        }
-
-        return array;
     }
 }

@@ -143,9 +143,11 @@ GameObject:
   m_Component:
   - component: {fileID: 3996492093594805318}
   - component: {fileID: 158361774045573356}
+  - component: {fileID: 4012071928445618753}
   - component: {fileID: 7452190078923618675}
   - component: {fileID: 7988058445089002546}
   - component: {fileID: 7685945391690768087}
+  - component: {fileID: 6217946393189714860}
   m_Layer: 0
   m_Name: Unit
   m_TagString: Untagged
@@ -199,6 +201,28 @@ Rigidbody:
   m_Interpolate: 1
   m_Constraints: 0
   m_CollisionDetection: 3
+--- !u!195 &4012071928445618753
+NavMeshAgent:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5081324044384582902}
+  m_Enabled: 1
+  m_AgentTypeID: 0
+  m_Radius: 0.33333
+  m_Speed: 3
+  m_Acceleration: 24
+  avoidancePriority: 50
+  m_AngularSpeed: 120
+  m_StoppingDistance: 0.5
+  m_AutoTraverseOffMeshLink: 1
+  m_AutoBraking: 1
+  m_AutoRepath: 1
+  m_Height: 1
+  m_BaseOffset: 0.5
+  m_WalkableMask: 4294967295
+  m_ObstacleAvoidanceType: 4
 --- !u!114 &7452190078923618675
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -212,12 +236,12 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Unit
   actor: {fileID: 7685945391690768087}
+  agent: {fileID: 6217946393189714860}
   head: {fileID: 7602358309839836487}
   color: {r: 1, g: 1, b: 1, a: 1}
   controlFlags: 0
   input: {x: 0, y: 0}
   grounded: 0
-  rigidbody: {fileID: 158361774045573356}
   bodyYaw: 0
   headPitchYaw: {x: 0, y: 0}
   eyePitchYaw: {x: 0, y: 0}
@@ -232,15 +256,6 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 4294967295
   groundCheckCooldown: 0
-  settings:
-    radius: 0.33333334
-    jumpHeight: 0
-    dropThreshold: 0.2
-    separationWeight: 1
-    separationRadiusMultiplier: 3
-    ledgeDistanceAdd: 0.1
-    slowDownRadiusMultiplier: 3
-    velocityReverseThreshold: -0.1
 --- !u!114 &7988058445089002546
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -269,11 +284,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c2be5249c79099c41969a422e80b5343, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GOAP.Actor
-  activeGoal:
-    wants: []
-  layerIndex: -1
   state:
-    facts: []
+    facts: 
   layers:
   - goals: []
     plans: []
@@ -281,6 +293,22 @@ MonoBehaviour:
     plans: []
   - goals: []
     plans: []
+--- !u!114 &6217946393189714860
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5081324044384582902}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3bc1f31a3c31c1b488a9bf1002ac2544, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::RigidbodyAgent
+  velocityBreakThreshold: 1.05
+  warpThreshold: 0.6
+  rigidbody: {fileID: 158361774045573356}
+  agent: {fileID: 4012071928445618753}
 --- !u!1 &8550327179076341166
 GameObject:
   m_ObjectHideFlags: 0
@@ -320,6 +348,34 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 8854136395990068930}
     m_Modifications:
+    - target: {fileID: 1384072989114414378, guid: 4a63103ee6fce564a871a24ce4ab7e72, type: 3}
+      propertyPath: properties.Array.data[0].colorValue.b
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 1384072989114414378, guid: 4a63103ee6fce564a871a24ce4ab7e72, type: 3}
+      propertyPath: properties.Array.data[0].colorValue.g
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 1504869190840251980, guid: 4a63103ee6fce564a871a24ce4ab7e72, type: 3}
+      propertyPath: m_Layer
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1703036105641394896, guid: 4a63103ee6fce564a871a24ce4ab7e72, type: 3}
+      propertyPath: eyeDistance
+      value: 4.9
+      objectReference: {fileID: 0}
+    - target: {fileID: 5524772654648496025, guid: 4a63103ee6fce564a871a24ce4ab7e72, type: 3}
+      propertyPath: m_Layer
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5928034910872531707, guid: 4a63103ee6fce564a871a24ce4ab7e72, type: 3}
+      propertyPath: properties.Array.data[0].colorValue.b
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 5928034910872531707, guid: 4a63103ee6fce564a871a24ce4ab7e72, type: 3}
+      propertyPath: properties.Array.data[0].colorValue.g
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 6934440644811976121, guid: 4a63103ee6fce564a871a24ce4ab7e72, type: 3}
       propertyPath: m_LocalPosition.x
       value: 0
@@ -378,6 +434,14 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7732341931724955611, guid: 4a63103ee6fce564a871a24ce4ab7e72, type: 3}
       propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7811785380688285784, guid: 4a63103ee6fce564a871a24ce4ab7e72, type: 3}
+      propertyPath: m_Layer
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8384491389182465348, guid: 4a63103ee6fce564a871a24ce4ab7e72, type: 3}
+      propertyPath: m_Layer
       value: 0
       objectReference: {fileID: 0}
     m_RemovedComponents: []

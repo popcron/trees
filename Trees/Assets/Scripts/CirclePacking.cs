@@ -3,6 +3,23 @@ using UnityEngine;
 
 public class CirclePacking
 {
+    public static readonly Vector2[][] knownSolutions;
+
+    static CirclePacking()
+    {
+        knownSolutions = new Vector2[10][];
+        knownSolutions[0] = new Vector2[] { };
+        knownSolutions[1] = new Vector2[] { Vector2.zero };
+        knownSolutions[2] = new Vector2[] { new Vector2(0.5f, 0f), new Vector2(-0.5f, 0f) };
+        knownSolutions[3] = new Vector2[] { new Vector2(0f, 0.577f), new Vector2(-0.5f, -0.289f), new Vector2(0.5f, -0.289f) };
+        knownSolutions[4] = new Vector2[] { new Vector2(0f, 0.707f), new Vector2(-0.707f, 0f), new Vector2(0f, -0.707f), new Vector2(0.707f, 0f) };
+        knownSolutions[5] = new Vector2[] { new Vector2(0f, 0.809f), new Vector2(-0.809f, 0f), new Vector2(-0.25f, -0.769f), new Vector2(0.25f, -0.769f), new Vector2(0.809f, 0f) };
+        knownSolutions[6] = new Vector2[] { new Vector2(0f, 0.866f), new Vector2(-0.866f, 0f), new Vector2(-0.5f, -0.289f), new Vector2(0.5f, -0.289f), new Vector2(-0.25f, -0.769f), new Vector2(0.25f, -0.769f) };
+        knownSolutions[7] = new Vector2[] { new Vector2(0f, 1f), new Vector2(-1f, 0f), new Vector2(-0.707f, -0.707f), new Vector2(0f, -1f), new Vector2(0.707f, -0.707f), new Vector2(1f, 0f), new Vector2(0.707f, 0.707f) };
+        knownSolutions[8] = new Vector2[] { new Vector2(0f, 1f), new Vector2(-0.866f, 0.5f), new Vector2(-0.866f, -0.5f), new Vector2(0f, -1f), new Vector2(0.866f, -0.5f), new Vector2(0.866f, 0.5f), new Vector2(-0.5f, 0.866f), new Vector2(-0.5f, -0.866f) };
+        knownSolutions[9] = new Vector2[] { new Vector2(0f, 1f), new Vector2(-0.866f, 0.5f), new Vector2(-0.866f, -0.5f), new Vector2(0f, -1f), new Vector2(0.866f, -0.5f), new Vector2(0.866f, 0.5f), new Vector2(-0.5f, 0.866f), new Vector2(-0.5f, -0.866f), new Vector2(0.5f, 0.866f) };
+    }
+
     private static float NextFloat()
     {
         return UnityEngine.Random.value;
@@ -10,19 +27,14 @@ public class CirclePacking
 
     public static void Generate(int count, float radius, Span<Vector2> points, int maxIterations = 512)
     {
-        if (count == 0)
+        if (count < knownSolutions.Length)
         {
-            return;
-        }
-        else if (count == 1)
-        {
-            points[0] = Vector2.zero;
-            return;
-        }
-        else if (count == 2)
-        {
-            points[0] = new Vector2(radius, radius);
-            points[1] = new Vector2(-radius, -radius);
+            ReadOnlySpan<Vector2> solution = knownSolutions[count];
+            for (int i = 0; i < count; i++)
+            {
+                points[i] = solution[i] * radius;
+            }
+
             return;
         }
 

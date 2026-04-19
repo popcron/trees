@@ -9,8 +9,10 @@ public class ApplyPlayerMoveInputHandler : ActionHandler<ApplyStrafeInput>
         {
             Unit unit = actor.GetComponent<Unit>();
             Vector3 localMovement = new(strafe.input.x, 0f, strafe.input.y);
-            Vector3 bodyRotation = Quaternion.Euler(0f, unit.bodyYaw, 0f) * localMovement;
-            unit.input = new Vector2(bodyRotation.x, bodyRotation.z);
+            Vector3 worldMovement = Quaternion.Euler(0f, unit.bodyYaw, 0f) * localMovement;
+            Vector2 move = new(worldMovement.x, worldMovement.z);
+            unit.actor.DispatchSubGoal(layer, new Move(move));
+            return true;
         }
 
         return true;

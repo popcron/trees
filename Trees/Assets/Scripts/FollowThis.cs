@@ -1,32 +1,12 @@
 ﻿using UnityEngine;
-using UnityEngine.InputSystem;
 
 public class FollowThis : MonoBehaviour
 {
-    public float speed = 3f;
-    public float acceleration = 8f;
-    public Pathfinding.Settings settings = new();
+    public RigidbodyAgent[] agents = { };
 
-    private Pathfinding.Agent[] agents = { };
-    private Rigidbody[] rigidbodies = { };
-
-    private void OnEnable()
+    private void Reset()
     {
-        rigidbodies = FindObjectsByType<Rigidbody>();
-        agents = new Pathfinding.Agent[rigidbodies.Length];
-        for (int i = 0; i < agents.Length; i++)
-        {
-            Rigidbody rigidbody = rigidbodies[i];
-            agents[i] = Pathfinding.Register(rigidbody.GetEntityId(), settings);
-        }
-    }
-
-    private void OnDisable()
-    {
-        for (int i = 0; i < rigidbodies.Length; i++)
-        {
-            Pathfinding.Unregister(rigidbodies[i].GetEntityId());
-        }
+        agents = FindObjectsByType<RigidbodyAgent>();
     }
 
     private void OnDrawGizmos()
@@ -35,45 +15,18 @@ public class FollowThis : MonoBehaviour
         EditorGizmos.color = Color.red;
         EditorGizmos.ConeHandleCap(0, destination, Quaternion.LookRotation(Vector3.down), 0.2f);
         EditorGizmos.DrawWireDisc(destination, Vector3.up, 0.2f);
-
-        // preview the radius
-        EditorGizmos.color = Color.orange;
-        Rigidbody[] rigidbodies = FindObjectsByType<Rigidbody>();
-        for (int i = 0; i < rigidbodies.Length; i++)
-        {
-            Vector3 position = rigidbodies[i].position;
-            EditorGizmos.DrawWireDisc(position, Vector3.up, settings.radius);
-        }
     }
 
     private void Update()
     {
-        float delta = Time.deltaTime;
-        UpdatePosition();
         Vector3 destination = GetDestination();
         for (int i = 0; i < agents.Length; i++)
         {
-            Pathfinding.Agent agent = agents[i];
-            Rigidbody rigidbody = rigidbodies[i];
-            if (rigidbody.gameObject.activeSelf)
+            RigidbodyAgent agent = agents[i];
+            if (agent.gameObject.activeInHierarchy && agent.agent.isOnNavMesh)
             {
-                if (agent.TryResolve(rigidbody, destination, delta, out Vector2 moveInput))
-                {
-                    Vector3 velocity = rigidbody.linearVelocity;
-                    velocity.x = Mathf.Lerp(velocity.x, moveInput.x * speed, acceleration * delta);
-                    velocity.z = Mathf.Lerp(velocity.z, moveInput.y * speed, acceleration * delta);
-                    rigidbody.linearVelocity = velocity;
-                }
+                agent.agent.SetDestination(destination);
             }
-        }
-    }
-
-    public void UpdatePosition()
-    {
-        Ray cameraRay = Camera.main.ScreenPointToRay(Mouse.current.position.ReadValue());
-        if (Raycasting.TryGetClosestHit(cameraRay, 100f, IgnoreRigidbodies, out RaycastHit hit))
-        {
-            transform.position = hit.point + hit.normal * 0.1f;
         }
     }
 
