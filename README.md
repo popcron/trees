@@ -16,7 +16,7 @@ Pieces of a colony simulation game, but not the game itself.
 
 # The Main Scene
 
-![main](Docs/main.png)
+https://github.com/user-attachments/assets/b1a30642-1731-44fe-92ed-68d02b34a9af
 
 - 5 units
 - Can fly the main camera around
@@ -34,7 +34,7 @@ present here too.
 
 ### Rigidbody NavMesh Agents
 
-![pathfinding](Docs/pathfinding.png)
+https://github.com/user-attachments/assets/bda202f7-0e3e-43ff-82c9-4930fc8efa6e
 
 | In `Assets/Scripts/RigidbodyAgent.cs`
 
