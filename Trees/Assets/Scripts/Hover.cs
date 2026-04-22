@@ -25,9 +25,8 @@ public class Hover : MonoBehaviour
 
     private void Awake()
     {
-        RandomGenerator rng = new(GetEntityId().GetLongHashCode());
-        frame = rng.NextInt(0, frameInterval);
-        animationTime = rng.NextFloat();
+        frame = GetEntityId().GetHashCode() & frameInterval;
+        animationTime = GetEntityId().GetHashCode() / (float)int.MaxValue;
     }
 
     public Ray GetRay()
@@ -43,12 +42,12 @@ public class Hover : MonoBehaviour
         {
             EditorGizmos.DrawLine(ray.origin, hit.point);
             EditorGizmos.DrawWireDisc(hit.point, hit.normal, 0.1f);
-            EditorGizmos.ArrowHandleCap(0, hit.point, Quaternion.LookRotation(hit.normal), 0.2f, EventType.Repaint);
+            EditorGizmos.ArrowHandleCap(0, hit.point, Quaternion.LookRotation(hit.normal), 0.2f);
         }
         else
         {
             EditorGizmos.DrawRay(ray.origin, ray.direction * maxDistance);
-            EditorGizmos.ArrowHandleCap(0, ray.origin + ray.direction * maxDistance, Quaternion.LookRotation(ray.direction), 0.2f, EventType.Repaint);
+            EditorGizmos.ArrowHandleCap(0, ray.origin + ray.direction * maxDistance, Quaternion.LookRotation(ray.direction), 0.2f);
         }
     }
 

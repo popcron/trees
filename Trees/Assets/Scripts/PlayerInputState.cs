@@ -2,7 +2,8 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
 
-public struct PlayerInputState
+[Serializable]
+public struct PlayerInputState : IEquatable<PlayerInputState>
 {
     public Vector2 movement;
     public Vector2 look;
@@ -149,6 +150,31 @@ public struct PlayerInputState
         }
 
         return state;
+    }
+
+    public readonly override bool Equals(object obj)
+    {
+        return obj is PlayerInputState state && Equals(state);
+    }
+
+    public readonly bool Equals(PlayerInputState other)
+    {
+        return movement.Equals(other.movement) && look.Equals(other.look) && scroll == other.scroll && buttons == other.buttons;
+    }
+
+    public readonly override int GetHashCode()
+    {
+        return HashCode.Combine(movement, look, scroll, buttons);
+    }
+
+    public static bool operator ==(PlayerInputState left, PlayerInputState right)
+    {
+        return left.Equals(right);
+    }
+
+    public static bool operator !=(PlayerInputState left, PlayerInputState right)
+    {
+        return !(left == right);
     }
 
     [Flags]

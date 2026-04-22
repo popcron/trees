@@ -13,6 +13,7 @@ namespace Scripting
         public const string TypeDeclaration = "struct";
         public const string FieldDeclaration = "var";
         public const string VariableDeclaration = "var";
+        public const string FunctionDeclaration = "fn";
         public const string CreateInstance = "new";
 
         public static readonly string[] AllKeywords = new[]
@@ -26,6 +27,7 @@ namespace Scripting
             TypeDeclaration,
             FieldDeclaration,
             VariableDeclaration,
+            FunctionDeclaration,
             CreateInstance,
         };
 

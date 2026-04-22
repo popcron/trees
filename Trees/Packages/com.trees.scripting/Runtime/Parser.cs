@@ -223,7 +223,7 @@ namespace Scripting
                     Expression inner = ParseExpression(ref context);
                     if (!context.TryPeek(out Token close) || close.type != TokenType.CloseParenthesis)
                     {
-                        throw new ExpectedClosingParenthesis(context.State);
+                        throw new ExpectedClosingParenthesis(close, context.State);
                     }
 
                     context.Advance();
@@ -342,6 +342,15 @@ namespace Scripting
                     else
                     {
                         throw new ExpectedNameOfVariable(context.State);
+                    }
+                }
+                else if (tokenText.SequenceEqual(KeywordMap.FunctionDeclaration))
+                {
+                    // fn doSomething(var a, bar b) { }
+                    context.Advance();
+                    if (context.TryRead(TokenType.Keyword, out Token nameToken))
+                    {
+
                     }
                 }
             }

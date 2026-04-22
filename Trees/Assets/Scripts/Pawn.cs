@@ -31,8 +31,10 @@ public class Pawn : BaseBehaviour
             yield return body.head;
             yield return body.head.leftEye;
             yield return body.head.rightEye;
-            yield return body.leftHand;
-            yield return body.rightHand;
+            for (int i = 0; i < body.hands.Count; i++)
+            {
+                yield return body.hands[i];
+            }
         }
     }
 
@@ -155,8 +157,7 @@ public class Pawn : BaseBehaviour
 
         if (Time.time > nextEyeVariation)
         {
-            RandomGenerator rng = new(GetEntityId().GetLongHashCode());
-            float t = (Time.time * 30f) + rng.NextFloat();
+            float t = (Time.time * 30f) + (GetEntityId().GetHashCode() / (float)int.MaxValue);
             float e = Mathf.PerlinNoise(t, t * 0.5f);
             nextEyeVariation = Time.time + Mathf.LerpUnclamped(minEyeAngleVariation, maxEyeAngleVariation, e);
             pitchYawVariation = Random.insideUnitCircle * variationAmount;

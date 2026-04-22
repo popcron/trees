@@ -2,7 +2,7 @@
 {
     public class ExpectedNameOfTypeToConstruct : ParserException
     {
-        public readonly Token actualToken;
+        public readonly string actualToken;
 
         public override string Message
         {
@@ -14,7 +14,7 @@
 
         public ExpectedNameOfTypeToConstruct(Token actualToken, Parser.State state) : base(state)
         {
-            this.actualToken = actualToken;
+            this.actualToken = actualToken.GetSourceCode(state.sourceCode).ToString();
         }
     }
 }

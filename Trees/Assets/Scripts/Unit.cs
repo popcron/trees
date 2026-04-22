@@ -11,14 +11,13 @@ public class Unit : BaseBehaviour
     public Actor actor;
     public RigidbodyAgent agent;
     public Transform head;
+    public TriggerColliderCollector interactionTrigger;
     public Color color = Color.white;
-    public ControlFlags controlFlags;
-    public Vector2 input;
     public bool grounded;
     public float bodyYaw;
     public Vector2 headPitchYaw;
     public Vector2 eyePitchYaw;
-    public bool jump;
+    public float carryStrength = 2f;
     public float eyeDistance = 5f;
     public float maxSpeed = 3f;
     public float maxAcceleration = 40f;
@@ -27,6 +26,8 @@ public class Unit : BaseBehaviour
     public float groundDistance = 0.1f;
     public LayerMask groundLayerMask = ~0;
     public float groundCheckCooldown;
+    public int preferredHandIndex = 0;
+    public List<Rigidbody> carrying = new();
 
     public Quaternion LookRotation
     {
@@ -98,9 +99,35 @@ public class Unit : BaseBehaviour
     private void FixedUpdate()
     {
         float delta = Time.fixedDeltaTime;
-        input = Vector2.zero;
         actor.Act(delta);
         CheckIfGrounded(delta);
+        ApplyItemDrag(delta);
+    }
+
+    private void ApplyItemDrag(float delta)
+    {
+        float mass = GetHeldMass();
+        if (mass == 0f)
+        {
+            return;
+        }
+
+        float factor = Mathf.Exp(-mass * delta);
+        Vector3 velocity = agent.rigidbody.linearVelocity;
+        velocity.x *= factor;
+        velocity.z *= factor;
+        agent.rigidbody.linearVelocity = velocity;
+    }
+
+    public float GetHeldMass()
+    {
+        float mass = 0f;
+        for (int i = 0; i < carrying.Count; i++)
+        {
+            mass += carrying[i].mass;
+        }
+
+        return mass / carryStrength;
     }
 
     private void CheckIfGrounded(float delta)
@@ -111,5 +138,85 @@ public class Unit : BaseBehaviour
             groundCheckCooldown = 0f;
             grounded = TryGetGroundHit(out _);
         }
+    }
+
+    public bool TryGetClosestInteractiveRigidbody(out Rigidbody closestRigidbody)
+    {
+        closestRigidbody = null;
+        float threshold = float.MaxValue;
+        for (int i = 0; i < interactionTrigger.previousColliders.Count; i++)
+        {
+            Collider collider = interactionTrigger.previousColliders[i];
+            Rigidbody rigidbody = collider.attachedRigidbody;
+            if (rigidbody != null)
+            {
+                float distanceSquared = (rigidbody.worldCenterOfMass - head.position).sqrMagnitude;
+                if (distanceSquared < threshold)
+                {
+                    threshold = distanceSquared;
+                    closestRigidbody = rigidbody;
+                }
+            }
+        }
+
+        return closestRigidbody != null;
+    }
+
+    public int CountUsedHands()
+    {
+        int used = 0;
+        for (int i = 0; i < carrying.Count; i++)
+        {
+            used += HoldAnchors.Count(carrying[i]);
+        }
+
+        return used;
+    }
+
+    public int GetFreeHands(int handCount)
+    {
+        return handCount - CountUsedHands();
+    }
+
+    public void AssignHands(int handCount, Rigidbody[] occupiedBy)
+    {
+        for (int i = 0; i < handCount; i++)
+        {
+            occupiedBy[i] = null;
+        }
+
+        int cursor = preferredHandIndex % handCount;
+        for (int i = 0; i < carrying.Count; i++)
+        {
+            Rigidbody rb = carrying[i];
+            int needed = HoldAnchors.Count(rb);
+            for (int k = 0; k < needed; k++)
+            {
+                while (occupiedBy[cursor] != null)
+                {
+                    cursor = (cursor + 1) % handCount;
+                }
+
+                occupiedBy[cursor] = rb;
+                cursor = (cursor + 1) % handCount;
+            }
+        }
+    }
+
+    public static bool IsHeld(Rigidbody rigidbody)
+    {
+        for (int i = 0; i < all.Count; i++)
+        {
+            List<Rigidbody> list = all[i].carrying;
+            for (int j = 0; j < list.Count; j++)
+            {
+                if (list[j] == rigidbody)
+                {
+                    return true;
+                }
+            }
+        }
+
+        return false;
     }
 }

@@ -1,6 +1,7 @@
-﻿public class BodyPart : PawnPart
+﻿using System.Collections.Generic;
+
+public class BodyPart : PawnPart
 {
     public HeadPart head;
-    public LeftHandPart leftHand;
-    public RightHandPart rightHand;
+    public List<HandPart> hands = new();
 }

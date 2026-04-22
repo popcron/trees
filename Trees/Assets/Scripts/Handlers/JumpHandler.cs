@@ -1,4 +1,5 @@
 ﻿using GOAP;
+using UnityEngine;
 
 public class JumpHandler : ActionHandler<DoJump>
 {
@@ -9,7 +10,10 @@ public class JumpHandler : ActionHandler<DoJump>
             Unit unit = actor.GetComponent<Unit>();
             if (unit.grounded)
             {
-                unit.jump = true;
+                unit.grounded = false;
+                unit.groundCheckCooldown = 0.25f;
+                float force = Mathf.Sqrt(2 * unit.maxJumpHeight * Physics.gravity.magnitude);
+                unit.agent.rigidbody.linearVelocity += Vector3.up * force;
                 return true;
             }
         }

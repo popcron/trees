@@ -16,26 +16,11 @@ public static class Program
 
     private static void RegisterBindings()
     {
-        interpreter.DeclareBinding("time", GetTime);
-        interpreter.DeclareBinding(nameof(focalPoint), GetFocalPoint);
-        interpreter.DeclareBinding(nameof(inControl), InControl);
+        interpreter.DeclareBinding("time", () => Time.time);
+        interpreter.DeclareBinding("focalPoint", () => focalPoint);
+        interpreter.DeclareBinding("inControl", () => inControl);
         interpreter.DeclareBinding("hoveringOver", GetHoveringOver);
         interpreter.DeclareBinding("inEditMode", InEditMode);
-    }
-
-    public static float GetTime()
-    {
-        return Time.time;
-    }
-
-    private static BaseBehaviour GetFocalPoint()
-    {
-        return focalPoint;
-    }
-
-    private static bool InControl()
-    {
-        return inControl;
     }
 
     public static BaseBehaviour GetHoveringOver()

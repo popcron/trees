@@ -22,5 +22,15 @@ namespace GOAP
         {
             addFacts.Add(typeof(T).GetID());
         }
+
+        public void AddPreCondition<T>() where T : Fact
+        {
+            preConditionFacts.Add(typeof(T).GetID());
+        }
+
+        public void RemoveFact<T>() where T : Fact
+        {
+            removeFacts.Add(typeof(T).GetID());
+        }
     }
 }
