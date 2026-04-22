@@ -10,8 +10,8 @@ public class FirstPersonController : MonoBehaviour
     private void OnEnable()
     {
         input = PlayerInputState.Get();
-        lastFirstAction = input.IsButtonPressed(PlayerInputState.Button.FirstAction);
-        lastSecondAction = input.IsButtonPressed(PlayerInputState.Button.SecondAction);
+        lastFirstAction = input.actions.x > 0.5f;
+        lastSecondAction = input.actions.y > 0.5f;
     }
 
     private void Update()
@@ -35,7 +35,7 @@ public class FirstPersonController : MonoBehaviour
             unit.actor.SubmitGoal(new TryToJump());
         }
 
-        if (lastFirstAction != input.IsButtonPressed(PlayerInputState.Button.FirstAction))
+        if (lastFirstAction != (input.actions.x > 0.5f))
         {
             lastFirstAction = !lastFirstAction;
             if (lastFirstAction)
@@ -44,7 +44,7 @@ public class FirstPersonController : MonoBehaviour
             }
         }
 
-        if (lastSecondAction != input.IsButtonPressed(PlayerInputState.Button.SecondAction))
+        if (lastSecondAction != (input.actions.y > 0.5f))
         {
             lastSecondAction = !lastSecondAction;
             if (lastSecondAction)

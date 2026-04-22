@@ -15,7 +15,7 @@ MonoBehaviour:
   brakeTorque: 22
   engineTorqueScale: 15
   reverseTorqueScale: 12
-  forwardTopSpeed: 13
+  forwardTopSpeed: 34.7
   reverseTopSpeed: 7
   springStrength: 1200
   springDamper: 60
@@ -124,12 +124,12 @@ MonoBehaviour:
       outWeight: 0.33333334
     - serializedVersion: 3
       time: 1
-      value: 0.71981204
-      inSlope: -0.58600867
-      outSlope: -0.58600867
+      value: 0
+      inSlope: 0.0051624365
+      outSlope: 0.0051624365
       tangentMode: 0
       weightedMode: 0
-      inWeight: 0.25326902
+      inWeight: 1
       outWeight: 0
     m_PreInfinity: 2
     m_PostInfinity: 2

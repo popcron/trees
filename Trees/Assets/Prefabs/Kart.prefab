@@ -46,13 +46,17 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::RaycastSpring
   carRigidbody: {fileID: 2949726908896260058}
-  tireVisual: {fileID: 8998575252666428943}
+  tyreVisual: {fileID: 8998575252666428943}
   settings: {fileID: 11400000, guid: 8e9242ec603518d4297bacf47477481c, type: 2}
   steeringAngle: 0
   gasInput: 0
   brakeInput: 0
-  suspensionRestDistance: 0.66
+  suspensionRestDistance: 0.624
   wheelRadius: 0.27
+  wheelAngularVelocity: 0
+  normalizedLongitudinalSlip: 0
+  normalizedLateralSlip: 0
+  normalizedWheelSpeed: 0
 --- !u!1 &1535934377508082594
 GameObject:
   m_ObjectHideFlags: 0
@@ -252,10 +256,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c87051b7ae1811c49a553615c528453d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Kart
+  carRigidbody: {fileID: 2949726908896260058}
+  centerOfMass: {x: 0, y: 0.45, z: 0}
   gasSpeed: 8
   breakSpeed: 8
-  steerSpeed: 120
-  maxSteerAngle: 24
+  steerSpeed: 180
+  maxSteerAngle: 26
   drivingWheels:
   - {fileID: 7596699014887042865}
   - {fileID: 3855038862424948257}
@@ -265,6 +271,8 @@ MonoBehaviour:
   gasInput: 0
   steerInput: 0
   breakInput: 0
+  smoothing: 2
+  guiScale: 200
 --- !u!1 &2689912409813888658
 GameObject:
   m_ObjectHideFlags: 0
@@ -962,13 +970,17 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::RaycastSpring
   carRigidbody: {fileID: 2949726908896260058}
-  tireVisual: {fileID: 4569263891192129271}
+  tyreVisual: {fileID: 4569263891192129271}
   settings: {fileID: 11400000, guid: 8e9242ec603518d4297bacf47477481c, type: 2}
   steeringAngle: 0
   gasInput: 0
   brakeInput: 0
-  suspensionRestDistance: 0.66
+  suspensionRestDistance: 0.624
   wheelRadius: 0.27
+  wheelAngularVelocity: 0
+  normalizedLongitudinalSlip: 0
+  normalizedLateralSlip: 0
+  normalizedWheelSpeed: 0
 --- !u!1 &5836138404830206992
 GameObject:
   m_ObjectHideFlags: 0
@@ -1015,13 +1027,17 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::RaycastSpring
   carRigidbody: {fileID: 2949726908896260058}
-  tireVisual: {fileID: 5147437411436314677}
+  tyreVisual: {fileID: 5147437411436314677}
   settings: {fileID: 11400000, guid: 8e9242ec603518d4297bacf47477481c, type: 2}
   steeringAngle: 0
   gasInput: 0
   brakeInput: 0
   suspensionRestDistance: 0.6
   wheelRadius: 0.25
+  wheelAngularVelocity: 0
+  normalizedLongitudinalSlip: 0
+  normalizedLateralSlip: 0
+  normalizedWheelSpeed: 0
 --- !u!1 &6689086206685042345
 GameObject:
   m_ObjectHideFlags: 0
@@ -1339,13 +1355,17 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::RaycastSpring
   carRigidbody: {fileID: 2949726908896260058}
-  tireVisual: {fileID: 5619023551742708154}
+  tyreVisual: {fileID: 5619023551742708154}
   settings: {fileID: 11400000, guid: 8e9242ec603518d4297bacf47477481c, type: 2}
   steeringAngle: 0
   gasInput: 0
   brakeInput: 0
   suspensionRestDistance: 0.6
   wheelRadius: 0.25
+  wheelAngularVelocity: 0
+  normalizedLongitudinalSlip: 0
+  normalizedLateralSlip: 0
+  normalizedWheelSpeed: 0
 --- !u!1 &8316214143159795597
 GameObject:
   m_ObjectHideFlags: 0

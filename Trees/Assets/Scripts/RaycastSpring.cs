@@ -3,15 +3,17 @@
 public class RaycastSpring : MonoBehaviour
 {
     public Rigidbody carRigidbody;
-    public Transform tireVisual;
+    public Transform tyreVisual;
     public WheelSettings settings;
     public float steeringAngle = 0f;
     public float gasInput = 0f;
     public float brakeInput = 0f;
     public float suspensionRestDistance = 5f;
     public float wheelRadius = 0.4f;
-
-    private float wheelAngularVelocity;
+    public float wheelAngularVelocity;
+    public float normalizedLongitudinalSlip;
+    public float normalizedLateralSlip;
+    public float normalizedWheelSpeed;
 
     private float WheelInertia => 0.5f * settings.tyreMass * wheelRadius * wheelRadius;
 
@@ -29,8 +31,8 @@ public class RaycastSpring : MonoBehaviour
     {
         Ray ray = GetRay();
         float distance = TryGetGround(out RaycastHit ground, out _) ? ground.distance : suspensionRestDistance;
-        tireVisual.position = ray.origin + ray.direction * (distance - wheelRadius);
-        tireVisual.rotation = transform.rotation;
+        tyreVisual.position = ray.origin + ray.direction * (distance - wheelRadius);
+        tyreVisual.rotation = transform.rotation;
     }
 
     public Ray GetRay()
@@ -45,7 +47,7 @@ public class RaycastSpring : MonoBehaviour
         float inertia = WheelInertia;
         if (gasInput > 0f)
         {
-            float normalizedWheelSpeed = Mathf.Clamp01(Mathf.Abs(wheelAngularVelocity * wheelRadius) / settings.forwardTopSpeed);
+            normalizedWheelSpeed = Mathf.Clamp01(Mathf.Abs(wheelAngularVelocity * wheelRadius) / settings.forwardTopSpeed);
             float engineTorque = settings.powerCurve.Evaluate(normalizedWheelSpeed) * gasInput * settings.engineTorqueScale;
             wheelAngularVelocity += engineTorque / inertia * delta;
         }
@@ -62,14 +64,16 @@ public class RaycastSpring : MonoBehaviour
             else
             {
                 // then go backwards
-                float normalizedWheelSpeed = Mathf.Clamp01(Mathf.Abs(wheelAngularVelocity * wheelRadius) / settings.reverseTopSpeed);
-                float engineTorque = settings.reversePowerCurve.Evaluate(normalizedWheelSpeed) * brakeInput * settings.reverseTorqueScale;
+                float normalizedReverseWheelSpeed = Mathf.Clamp01(Mathf.Abs(wheelAngularVelocity * wheelRadius) / settings.reverseTopSpeed);
+                float engineTorque = settings.reversePowerCurve.Evaluate(normalizedReverseWheelSpeed) * brakeInput * settings.reverseTorqueScale;
                 wheelAngularVelocity -= engineTorque / inertia * delta;
             }
         }
 
         if (TryGetGround(out RaycastHit ground, out Ray ray))
         {
+            float carShare = carRigidbody.mass / 4f; // assuming 4 wheels
+
             // suspension
             Vector3 springDirection = -ray.direction;
             Vector3 tyreWorldVelocity = carRigidbody.GetPointVelocity(ray.origin);
@@ -77,25 +81,27 @@ public class RaycastSpring : MonoBehaviour
             float springVelocity = Vector3.Dot(springDirection, tyreWorldVelocity);
             float force = (offset * settings.springStrength) - (springVelocity * settings.springDamper);
             carRigidbody.AddForceAtPosition(springDirection * force, ray.origin);
-
+        
             // lateral friction
             Vector3 steeringDirection = transform.right;
             float lateralVelocity = Vector3.Dot(steeringDirection, tyreWorldVelocity);
-            float normalizedLateralSlip = Mathf.Clamp01(Mathf.Abs(lateralVelocity) / settings.forwardTopSpeed);
+            normalizedLateralSlip = Mathf.Clamp01(Mathf.Abs(lateralVelocity) / settings.forwardTopSpeed);
             float lateralGrip = settings.lateralGripCurve.Evaluate(normalizedLateralSlip);
-            float lateralForce = -lateralVelocity * lateralGrip * settings.tyreMass / delta;
+            float lateralForce = -lateralVelocity * lateralGrip * carShare / delta;
             carRigidbody.AddForceAtPosition(steeringDirection * lateralForce, ray.origin);
 
             // longitudinal friction
+            float wheelEquivMass = inertia / (wheelRadius * wheelRadius);
+            float reducedMass = (wheelEquivMass * carShare) / (wheelEquivMass + carShare);
             Vector3 accelerationDirection = transform.forward;
             float forwardVelocity = Vector3.Dot(accelerationDirection, tyreWorldVelocity);
             float wheelSurfaceVelocity = wheelAngularVelocity * wheelRadius;
             float slipVelocity = forwardVelocity - wheelSurfaceVelocity;
-            float normalizedLongitudinalSlip = Mathf.Clamp01(Mathf.Abs(slipVelocity) / settings.forwardTopSpeed);
+            normalizedLongitudinalSlip = Mathf.Clamp01(Mathf.Abs(slipVelocity) / settings.forwardTopSpeed);
             float longitudinalGrip = settings.longitudinalGripCurve.Evaluate(normalizedLongitudinalSlip);
-            float longitudinalForce = -slipVelocity * longitudinalGrip * settings.tyreMass / delta;
+            float longitudinalForce = -slipVelocity * longitudinalGrip * reducedMass / delta;
             carRigidbody.AddForceAtPosition(accelerationDirection * longitudinalForce, ray.origin);
-
+        
             // reaction torque
             wheelAngularVelocity += -longitudinalForce * wheelRadius / inertia * delta;
         }

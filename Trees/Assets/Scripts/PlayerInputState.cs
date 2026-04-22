@@ -7,6 +7,7 @@ public struct PlayerInputState : IEquatable<PlayerInputState>
 {
     public Vector2 movement;
     public Vector2 look;
+    public Vector3 actions;
     public float scroll;
     public Button buttons;
 
@@ -45,17 +46,17 @@ public struct PlayerInputState : IEquatable<PlayerInputState>
             state.scroll = mouse.scroll.ReadValue().magnitude;
             if (mouse.leftButton.isPressed)
             {
-                state.buttons |= Button.FirstAction;
+                state.actions.x = 1f;
             }
 
             if (mouse.rightButton.isPressed)
             {
-                state.buttons |= Button.SecondAction;
+                state.actions.y = 1f;
             }
 
             if (mouse.middleButton.isPressed)
             {
-                state.buttons |= Button.ThirdAction;
+                state.actions.z = 1f;
             }
         }
 
@@ -101,44 +102,24 @@ public struct PlayerInputState : IEquatable<PlayerInputState>
 
         if (Gamepad.current is Gamepad gamepad)
         {
-            Vector2 leftStick = gamepad.leftStick.ReadValue();
-            Vector2 rightStick = gamepad.rightStick.ReadValue();
-            float deadzone = 0.1f;
-            if (leftStick.magnitude > deadzone)
-            {
-                state.movement += leftStick.normalized;
-            }
+            state.movement += gamepad.leftStick.ReadValue();
+            state.look += gamepad.rightStick.ReadValue();
+            state.actions.x = gamepad.leftTrigger.ReadValue();
+            state.actions.y = gamepad.rightTrigger.ReadValue();
 
-            if (rightStick.magnitude > deadzone)
-            {
-                state.look += rightStick * 5f;
-            }
-
-            float leftTrigger = gamepad.leftTrigger.ReadValue();
-            if (leftTrigger > 0.5f)
-            {
-                state.buttons |= Button.Shift;
-            }
-
-            float rightTrigger = gamepad.rightTrigger.ReadValue();
-            if (rightTrigger > 0.5f)
+            if (gamepad.aButton.isPressed)
             {
                 state.buttons |= Button.Jump;
             }
 
-            if (gamepad.aButton.isPressed)
-            {
-                state.buttons |= Button.FirstAction;
-            }
-
             if (gamepad.bButton.isPressed)
             {
-                state.buttons |= Button.SecondAction;
+                state.buttons |= Button.Control;
             }
 
             if (gamepad.xButton.isPressed)
             {
-                state.buttons |= Button.ThirdAction;
+                state.buttons |= Button.Shift;
             }
 
             if (gamepad.yButton.isPressed)
@@ -182,9 +163,6 @@ public struct PlayerInputState : IEquatable<PlayerInputState>
     {
         Jump = 1,
         Shift = 2,
-        Control = 4,
-        FirstAction = 8,
-        SecondAction = 16,
-        ThirdAction = 32
+        Control = 4
     }
 }
