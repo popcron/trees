@@ -10,70 +10,52 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 12f40c64e33d86a4ab854185b4b7ba42, type: 3}
-  m_Name: Wheel Settings
+  m_Name: Kart
   m_EditorClassIdentifier: Assembly-CSharp::WheelSettings
-  brakeTorque: 22
-  engineTorqueScale: 15
-  reverseTorqueScale: 6
-  forwardTopSpeed: 24
-  reverseTopSpeed: 7
-  springStrength: 1200
-  dampingRatio: 0.6
-  tyreMass: 2
-  rollingResistanceCoefficient: 0.015
+  mass: 200
+  frontAntiRollStiffness: 3000
+  rearAntiRollStiffness: 3000
+  brakeTorque: 200
+  engineTorqueScale: 150
+  reverseTorqueScale: 120
+  forwardTopSpeed: 25
+  reverseTopSpeed: 8
+  springStrength: 10000
+  dampingRatio: 0.7
+  tyreMass: 6
+  rollingResistance: 0.08
+  peakFrictionCoefficient: 1
+  lateralStiffness: 1000
+  longitudinalStiffness: 120
   powerCurve:
     serializedVersion: 2
     m_Curve:
     - serializedVersion: 3
       time: 0
-      value: 1
-      inSlope: 0
-      outSlope: 0
+      value: 0.8
+      inSlope: 0.91258234
+      outSlope: 0.91258234
       tangentMode: 34
       weightedMode: 0
       inWeight: 0
       outWeight: 0.33333334
     - serializedVersion: 3
-      time: 0.7
-      value: 1
-      inSlope: 0
-      outSlope: 0
+      time: 0.24323404
+      value: 1.0219711
+      inSlope: -0.44507244
+      outSlope: -0.44507244
       tangentMode: 0
       weightedMode: 0
-      inWeight: 0.33333334
-      outWeight: 0.98779
+      inWeight: 0.12730154
+      outWeight: 0.2731413
     - serializedVersion: 3
       time: 1
-      value: 0.25
-      inSlope: -2.5
-      outSlope: -2.5
+      value: 0
+      inSlope: -1.3504454
+      outSlope: -1.3504454
       tangentMode: 34
       weightedMode: 0
       inWeight: 0.33333334
-      outWeight: 0
-    m_PreInfinity: 2
-    m_PostInfinity: 2
-    m_RotationOrder: 4
-  reversePowerCurve:
-    serializedVersion: 2
-    m_Curve:
-    - serializedVersion: 3
-      time: 0
-      value: 1
-      inSlope: 0
-      outSlope: 0
-      tangentMode: 34
-      weightedMode: 0
-      inWeight: 0
-      outWeight: 0
-    - serializedVersion: 3
-      time: 1
-      value: 1
-      inSlope: 0
-      outSlope: 0
-      tangentMode: 34
-      weightedMode: 0
-      inWeight: 0
       outWeight: 0
     m_PreInfinity: 2
     m_PostInfinity: 2

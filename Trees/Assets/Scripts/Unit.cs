@@ -28,6 +28,15 @@ public class Unit : BaseBehaviour
     public float groundCheckCooldown;
     public int preferredHandIndex = 0;
     public List<Rigidbody> carrying = new();
+    public Rigidbody seatSupport;
+    public Transform seatAnchor;
+    public Vector3 seatLocalPosition;
+    public Quaternion seatLocalRotation;
+    public Vector3 seatLastSupportVelocity;
+    public Vector3 seatLastSupportAngularVelocity;
+    public float seatEjectAcceleration = 60f;
+    public float seatEjectAngularAcceleration = 80f;
+    public bool seatWasKinematic;
 
     public Quaternion LookRotation
     {
@@ -50,6 +59,10 @@ public class Unit : BaseBehaviour
     {
         base.OnEnable();
         all.Add(this);
+        if (!actor.state.Has<Seated>() && !actor.state.Has<Standing>())
+        {
+            actor.state.Add<Standing>();
+        }
     }
 
     protected override void OnDisable()
@@ -102,10 +115,97 @@ public class Unit : BaseBehaviour
         actor.Act(delta);
         CheckIfGrounded(delta);
         ApplyItemDrag(delta);
+        TrackSeat(delta);
+    }
+
+    public bool IsSeated
+    {
+        get { return actor.state.Has<Seated>(); }
+    }
+
+    public void BindSeat(SitCandidate candidate)
+    {
+        agent.enabled = false;
+        seatWasKinematic = agent.rigidbody.isKinematic;
+        agent.rigidbody.isKinematic = true;
+        agent.rigidbody.linearVelocity = Vector3.zero;
+        agent.rigidbody.angularVelocity = Vector3.zero;
+        agent.rigidbody.position = candidate.position;
+        agent.rigidbody.rotation = candidate.rotation;
+
+        seatSupport = candidate.support;
+        seatAnchor = candidate.anchor;
+        if (seatSupport != null)
+        {
+            seatLocalPosition = seatSupport.transform.InverseTransformPoint(candidate.position);
+            seatLocalRotation = Quaternion.Inverse(seatSupport.rotation) * candidate.rotation;
+            seatLastSupportVelocity = seatSupport.linearVelocity;
+            seatLastSupportAngularVelocity = seatSupport.angularVelocity;
+        }
+    }
+
+    public void ReleaseSeat()
+    {
+        seatSupport = null;
+        seatAnchor = null;
+        agent.rigidbody.isKinematic = seatWasKinematic;
+        agent.enabled = true;
+    }
+
+    private void TrackSeat(float delta)
+    {
+        if (!IsSeated)
+        {
+            return;
+        }
+
+        if (seatSupport == null)
+        {
+            return;
+        }
+
+        Vector3 linearDelta = seatSupport.linearVelocity - seatLastSupportVelocity;
+        Vector3 angularDelta = seatSupport.angularVelocity - seatLastSupportAngularVelocity;
+        float inverseDelta = 1f / delta;
+        bool violent = linearDelta.magnitude * inverseDelta > seatEjectAcceleration
+                    || angularDelta.magnitude * inverseDelta > seatEjectAngularAcceleration;
+
+        seatLastSupportVelocity = seatSupport.linearVelocity;
+        seatLastSupportAngularVelocity = seatSupport.angularVelocity;
+
+        if (violent)
+        {
+            Eject();
+            return;
+        }
+
+        Vector3 worldPosition = seatSupport.transform.TransformPoint(seatLocalPosition);
+        Quaternion worldRotation = seatSupport.rotation * seatLocalRotation;
+        agent.rigidbody.MovePosition(worldPosition);
+        agent.rigidbody.MoveRotation(worldRotation);
+    }
+
+    private void Eject()
+    {
+        Vector3 inheritLinear = seatSupport != null ? seatSupport.GetPointVelocity(agent.rigidbody.position) : Vector3.zero;
+        Vector3 inheritAngular = seatSupport != null ? seatSupport.angularVelocity : Vector3.zero;
+        ReleaseSeat();
+        agent.rigidbody.linearVelocity = inheritLinear;
+        agent.rigidbody.angularVelocity = inheritAngular;
+        actor.state.Remove(typeof(Seated).GetID());
+        if (!actor.state.Has<Standing>())
+        {
+            actor.state.Add<Standing>();
+        }
     }
 
     private void ApplyItemDrag(float delta)
     {
+        if (IsSeated)
+        {
+            return;
+        }
+
         float mass = GetHeldMass();
         if (mass == 0f)
         {
@@ -214,6 +314,19 @@ public class Unit : BaseBehaviour
                 {
                     return true;
                 }
+            }
+        }
+
+        return false;
+    }
+
+    public static bool IsSeatTaken(Transform anchor)
+    {
+        for (int i = 0; i < all.Count; i++)
+        {
+            if (all[i].seatAnchor == anchor)
+            {
+                return true;
             }
         }
 

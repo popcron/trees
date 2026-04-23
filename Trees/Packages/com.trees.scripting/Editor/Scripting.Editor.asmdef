@@ -1,10 +1,12 @@
-﻿{
+{
     "name": "Scripting.Editor",
     "rootNamespace": "Scripting",
     "references": [
         "GUID:86c838b68ef25a54c830e650d47ef987"
     ],
-    "includePlatforms": [],
+    "includePlatforms": [
+        "Editor"
+    ],
     "excludePlatforms": [],
     "allowUnsafeCode": false,
     "overrideReferences": false,

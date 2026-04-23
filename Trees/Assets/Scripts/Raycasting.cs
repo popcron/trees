@@ -42,13 +42,58 @@ public static class Raycasting
         {
             RaycastHit currentHit = results[i];
             float currentDistance = currentHit.distance;
+            if (currentDistance < closestDistance && select(currentHit))
+            {
+                closestDistance = currentDistance;
+                closestHit = currentHit;
+            }
+        }
+
+        return closestHit.collider != null;
+    }
+
+    public static bool TryGetClosestSphereHit(Ray ray, float distance, float radius, out RaycastHit closestHit)
+    {
+        return TryGetClosestSphereHit(ray, distance, radius, ~0, out closestHit);
+    }
+
+    public static bool TryGetClosestSphereHit(Ray ray, float distance, float radius, int layerMask, out RaycastHit closestHit)
+    {
+        closestHit = default;
+        float closestDistance = float.MaxValue;
+        int count = Physics.SphereCastNonAlloc(ray, radius, results, distance, layerMask);
+        for (int i = 0; i < count; i++)
+        {
+            RaycastHit currentHit = results[i];
+            float currentDistance = currentHit.distance;
             if (currentDistance < closestDistance)
             {
                 closestDistance = currentDistance;
-                if (select(currentHit))
-                {
-                    closestHit = currentHit;
-                }
+                closestHit = currentHit;
+            }
+        }
+
+        return closestDistance < float.MaxValue;
+    }
+
+    public static bool TryGetClosestSphereHit(Ray ray, float distance, float radius, SelectCallback select, out RaycastHit closestHit)
+    {
+        return TryGetClosestSphereHit(ray, distance, radius, ~0, select, out closestHit);
+    }
+
+    public static bool TryGetClosestSphereHit(Ray ray, float distance, float radius, int layerMask, SelectCallback select, out RaycastHit closestHit)
+    {
+        closestHit = default;
+        float closestDistance = float.MaxValue;
+        int count = Physics.SphereCastNonAlloc(ray, radius, results, distance, layerMask);
+        for (int i = 0; i < count; i++)
+        {
+            RaycastHit currentHit = results[i];
+            float currentDistance = currentHit.distance;
+            if (currentDistance < closestDistance && select(currentHit))
+            {
+                closestDistance = currentDistance;
+                closestHit = currentHit;
             }
         }
 

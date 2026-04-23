@@ -71,7 +71,25 @@ MonoBehaviour:
       - rid: 989124050049040635
       - rid: 989124050049040636
     m_RuntimeSettings:
-      m_List: []
+      m_List:
+      - rid: 989124050049040601
+      - rid: 989124050049040603
+      - rid: 989124050049040604
+      - rid: 989124050049040610
+      - rid: 989124050049040612
+      - rid: 989124050049040613
+      - rid: 989124050049040615
+      - rid: 989124050049040617
+      - rid: 989124050049040618
+      - rid: 989124050049040619
+      - rid: 989124050049040620
+      - rid: 989124050049040621
+      - rid: 989124050049040622
+      - rid: 989124050049040624
+      - rid: 989124050049040628
+      - rid: 989124050049040631
+      - rid: 989124050049040633
+      - rid: 989124050049040635
   m_AssetVersion: 11
   m_ObsoleteDefaultVolumeProfile: {fileID: 0}
   m_RenderingLayerNames:
@@ -157,6 +175,7 @@ MonoBehaviour:
       type: {class: ScreenSpaceReflectionPersistentResources, ns: UnityEngine.Rendering.Universal, asm: Unity.RenderPipelines.Universal.Runtime}
       data:
         m_Shader: {fileID: 4800000, guid: 7b3e6785f5f6b634794df3a85a2a35da, type: 3}
+        m_BlitShader: {fileID: 4800000, guid: 815c625bb9d4fe240a4ccf42ca3899cb, type: 3}
         m_Version: 0
     - rid: 989124050049040604
       type: {class: ScreenSpaceAmbientOcclusionDynamicResources, ns: UnityEngine.Rendering.Universal, asm: Unity.RenderPipelines.Universal.Runtime}
