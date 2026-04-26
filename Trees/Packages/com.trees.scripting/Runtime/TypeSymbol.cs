@@ -7,8 +7,16 @@ namespace Scripting
     {
         public readonly string name;
         public readonly List<FieldSymbol> fields;
+        public readonly List<FunctionSymbol> methods = new();
+        public readonly List<TypeSymbol> nestedTypes = new();
 
         public int FieldCount => fields.Count;
+
+        public TypeSymbol(ReadOnlySpan<char> name)
+        {
+            this.name = name.ToString();
+            this.fields = new();
+        }
 
         public TypeSymbol(ReadOnlySpan<char> name, List<FieldSymbol> fields)
         {
@@ -16,7 +24,7 @@ namespace Scripting
             this.fields = fields;
         }
 
-        public TypeSymbol(ReadOnlySpan<char> name, IEnumerable<FieldSymbol> fields)
+        public TypeSymbol(ReadOnlySpan<char> name, FieldSymbol[] fields)
         {
             this.name = name.ToString();
             this.fields = new(fields);
@@ -33,6 +41,36 @@ namespace Scripting
             }
 
             throw new Exception($"Type {this.name} does not contain field {name.ToString()}");
+        }
+
+        public bool TryGetMethod(ReadOnlySpan<char> name, out FunctionSymbol method)
+        {
+            for (int i = 0; i < methods.Count; i++)
+            {
+                if (methods[i].name.AsSpan().SequenceEqual(name))
+                {
+                    method = methods[i];
+                    return true;
+                }
+            }
+
+            method = null;
+            return false;
+        }
+
+        public bool TryGetNestedType(ReadOnlySpan<char> name, out TypeSymbol nested)
+        {
+            for (int i = 0; i < nestedTypes.Count; i++)
+            {
+                if (nestedTypes[i].name.AsSpan().SequenceEqual(name))
+                {
+                    nested = nestedTypes[i];
+                    return true;
+                }
+            }
+
+            nested = null;
+            return false;
         }
 
         public int IndexOfField(ReadOnlySpan<char> name)

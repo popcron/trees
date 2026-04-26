@@ -1,0 +1,16 @@
+{
+    "name": "GOAP.Runtime",
+    "rootNamespace": "",
+    "references": [
+        "GUID:fe710a522aec01f4ebc09910b8991d31"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

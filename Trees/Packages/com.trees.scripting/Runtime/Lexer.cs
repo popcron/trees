@@ -220,30 +220,6 @@ namespace Scripting
                     type = (TokenType)character;
                 }
             }
-            else if (character == '=' && position + 1 < text.Length && text[position + 1] == '=')
-            {
-                length = 2;
-                type = TokenType.DoubleEquals;
-                position += 2;
-            }
-            else if (character == '!' && position + 1 < text.Length && text[position + 1] == '=')
-            {
-                length = 2;
-                type = TokenType.NotEquals;
-                position += 2;
-            }
-            else if (character == '&' && position + 1 < text.Length && text[position + 1] == '&')
-            {
-                length = 2;
-                type = TokenType.And;
-                position += 2;
-            }
-            else if (character == '|' && position + 1 < text.Length && text[position + 1] == '|')
-            {
-                length = 2;
-                type = TokenType.Or;
-                position += 2;
-            }
             else
             {
                 length = start + 1 - start;

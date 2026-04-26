@@ -4,7 +4,7 @@ namespace Scripting
 {
     public class Group : Expression
     {
-        public readonly Expression expression;
+        public Expression expression;
 
         public override int ChildCount => 1;
 

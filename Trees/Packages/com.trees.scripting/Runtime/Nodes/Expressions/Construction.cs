@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Text;
 
@@ -6,12 +6,12 @@ namespace Scripting
 {
     public class Construction : Expression
     {
-        public readonly string type;
+        public Expression type;
         public readonly List<(string field, Expression value)> arguments;
 
-        public override int ChildCount => arguments.Count;
+        public override int ChildCount => 1 + arguments.Count;
 
-        public Construction(string type, List<(string field, Expression value)> arguments, Range range, Module module) : base(range, module)
+        public Construction(Expression type, List<(string field, Expression value)> arguments, Range range, Module module) : base(range, module)
         {
             this.type = type;
             this.arguments = arguments;
@@ -19,14 +19,19 @@ namespace Scripting
 
         public override Node GetChild(int index)
         {
-            return arguments[index].value;
+            if (index == 0)
+            {
+                return type;
+            }
+
+            return arguments[index - 1].value;
         }
 
         public override void Append(StringBuilder stringBuilder, int depth)
         {
             stringBuilder.Append(KeywordMap.CreateInstance);
             stringBuilder.Append(' ');
-            stringBuilder.Append(type);
+            type.Append(stringBuilder, depth);
             stringBuilder.Append('(');
 
             for (int i = 0; i < arguments.Count; i++)

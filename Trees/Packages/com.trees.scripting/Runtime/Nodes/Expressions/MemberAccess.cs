@@ -5,7 +5,7 @@ namespace Scripting
 {
     public class MemberAccess : Expression
     {
-        public readonly Expression target;
+        public Expression target;
         public readonly string member;
 
         public override int ChildCount => 1;

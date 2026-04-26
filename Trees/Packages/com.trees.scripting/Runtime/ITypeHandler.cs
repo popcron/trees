@@ -8,8 +8,8 @@
         Value Serialize(T value);
 
         /// <summary>
-        /// Tries to deserialize the given <paramref name="value"/> into a real <paramref name="result"/>.
+        /// Deserializes the given <paramref name="value"/> into a <typeparamref name="T"/>.
         /// </summary>
-        bool TryDeserialize(Value value, out T result);
+        T Deserialize(Value value);
     }
 }

@@ -5,9 +5,9 @@ namespace Scripting
 {
     public static class Parser
     {
-        public static Module Parse(ReadOnlySpan<char> sourceCode)
+        public static Module Parse(ReadOnlySpan<char> sourceCode, ReadOnly readOnly)
         {
-            Module module = new();
+            Module module = new(readOnly);
             Context context = new(module, sourceCode, 0);
             while (context.TryPeek(out Token nextToken))
             {
@@ -33,15 +33,73 @@ namespace Scripting
         private static Expression ParseExpression(ref Context context, int minPrecedence = 0)
         {
             Expression left = ParsePrimary(ref context);
-            while (context.TryPeek(out Token opToken) && TryGetBinaryOp(opToken, out BinaryOperator op))
+            while (context.TryPeek(out Token opToken))
             {
+                BinaryOperator op;
+                int consumed;
+                if (context.TryPeekAdjacent(out Token second))
+                {
+                    char a = (char)opToken.type;
+                    char b = (char)second.type;
+                    if (a == '=' && b == '=')
+                    {
+                        op = BinaryOperator.Equal;
+                        consumed = 2;
+                    }
+                    else if (a == '!' && b == '=')
+                    {
+                        op = BinaryOperator.NotEqual;
+                        consumed = 2;
+                    }
+                    else if (a == '&' && b == '&')
+                    {
+                        op = BinaryOperator.And;
+                        consumed = 2;
+                    }
+                    else if (a == '|' && b == '|')
+                    {
+                        op = BinaryOperator.Or;
+                        consumed = 2;
+                    }
+                    else if (a == '>' && b == '=')
+                    {
+                        op = BinaryOperator.GreaterEqual;
+                        consumed = 2;
+                    }
+                    else if (a == '<' && b == '=')
+                    {
+                        op = BinaryOperator.LessEqual;
+                        consumed = 2;
+                    }
+                    else if (TryGetBinaryOp(opToken, out op))
+                    {
+                        consumed = 1;
+                    }
+                    else
+                    {
+                        break;
+                    }
+                }
+                else if (TryGetBinaryOp(opToken, out op))
+                {
+                    consumed = 1;
+                }
+                else
+                {
+                    break;
+                }
+
                 int precedence = GetPrecedence(op);
                 if (precedence < minPrecedence)
                 {
                     break;
                 }
 
-                context.Advance();
+                for (int i = 0; i < consumed; i++)
+                {
+                    context.Advance();
+                }
+
                 Expression right = ParseExpression(ref context, precedence + 1);
                 Range range = new(left.range.Start, right.range.End);
                 left = new Binary(left, right, op, range, context.module);
@@ -77,24 +135,14 @@ namespace Scripting
                 op = BinaryOperator.Modulus;
                 return true;
             }
-            else if (token.type == TokenType.DoubleEquals)
+            else if ((char)token.type == '>')
             {
-                op = BinaryOperator.Equal;
+                op = BinaryOperator.Greater;
                 return true;
             }
-            else if (token.type == TokenType.NotEquals)
+            else if ((char)token.type == '<')
             {
-                op = BinaryOperator.NotEqual;
-                return true;
-            }
-            else if (token.type == TokenType.And)
-            {
-                op = BinaryOperator.And;
-                return true;
-            }
-            else if (token.type == TokenType.Or)
-            {
-                op = BinaryOperator.Or;
+                op = BinaryOperator.Less;
                 return true;
             }
             else
@@ -111,8 +159,9 @@ namespace Scripting
                 BinaryOperator.Or => 1,
                 BinaryOperator.And => 2,
                 BinaryOperator.Equal or BinaryOperator.NotEqual => 3,
-                BinaryOperator.Add or BinaryOperator.Subtract => 4,
-                BinaryOperator.Multiply or BinaryOperator.Divide or BinaryOperator.Modulus => 5,
+                BinaryOperator.Greater or BinaryOperator.Less or BinaryOperator.GreaterEqual or BinaryOperator.LessEqual => 4,
+                BinaryOperator.Add or BinaryOperator.Subtract => 5,
+                BinaryOperator.Multiply or BinaryOperator.Divide or BinaryOperator.Modulus => 6,
                 _ => 0,
             };
         }
@@ -154,7 +203,7 @@ namespace Scripting
             if (context.TryRead(TokenType.Number, out Token numToken))
             {
                 ReadOnlySpan<char> raw = context.GetSourceCode(numToken);
-                return new Number(raw.ToString(), numToken.range, context.module);
+                return new Number(raw, numToken.range, context.module);
             }
 
             // keywords
@@ -175,12 +224,7 @@ namespace Scripting
                 }
                 else if (text.SequenceEqual(KeywordMap.CreateInstance))
                 {
-                    if (!context.TryRead(TokenType.Keyword, out Token structNameToken))
-                    {
-                        throw new ExpectedNameOfTypeToConstruct(structNameToken, context.State);
-                    }
-
-                    string structName = context.GetSourceCode(structNameToken).ToString();
+                    Expression typeExpression = ParseTypeExpression(ref context);
                     List<(string name, Expression value)> arguments = new();
                     if (context.AdvanceIf(TokenType.OpenParenthesis))
                     {
@@ -206,7 +250,7 @@ namespace Scripting
                         context.AdvanceIf(TokenType.CloseParenthesis);
                     }
 
-                    Expression result = new Construction(structName, arguments, context.GetRange(start), context.module);
+                    Expression result = new Construction(typeExpression, arguments, context.GetRange(start), context.module);
                     return ParsePostfix(ref context, result, start);
                 }
 
@@ -242,12 +286,36 @@ namespace Scripting
 
         private static Expression ParsePostfix(ref Context context, Expression expr, int start)
         {
-            while (context.AdvanceIf(TokenType.Dot))
+            while (true)
             {
-                if (context.TryRead(TokenType.Keyword, out Token memberToken))
+                if (context.AdvanceIf(TokenType.Dot))
                 {
-                    string member = context.GetSourceCode(memberToken).ToString();
-                    expr = new MemberAccess(expr, member, context.GetRange(start), context.module);
+                    if (context.TryRead(TokenType.Keyword, out Token memberToken))
+                    {
+                        string member = context.GetSourceCode(memberToken).ToString();
+                        expr = new MemberAccess(expr, member, context.GetRange(start), context.module);
+                    }
+                }
+                else if (context.AdvanceIf(TokenType.OpenParenthesis))
+                {
+                    List<Expression> arguments = new();
+                    while (context.TryPeek(out Token next) && next.type != TokenType.CloseParenthesis)
+                    {
+                        if (arguments.Count > 0)
+                        {
+                            context.AdvanceIf(TokenType.Comma);
+                        }
+
+                        Expression argument = ParseExpression(ref context);
+                        arguments.Add(argument);
+                    }
+
+                    context.AdvanceIf(TokenType.CloseParenthesis);
+                    expr = new Call(expr, arguments, context.GetRange(start), context.module);
+                }
+                else
+                {
+                    break;
                 }
             }
 
@@ -292,38 +360,7 @@ namespace Scripting
                 }
                 else if (tokenText.SequenceEqual(KeywordMap.TypeDeclaration))
                 {
-                    context.Advance();
-                    if (context.TryRead(TokenType.Keyword, out Token structNameToken))
-                    {
-                        List<FieldDefinition> fields = new();
-                        string structName = context.GetSourceCode(structNameToken).ToString();
-                        context.SkipNewlines();
-                        context.AdvanceIf(TokenType.OpenBrace);
-                        context.SkipNewlines();
-
-                        int fieldStart = context.tokenIndex;
-                        while (context.TryPeekKeyword(KeywordMap.FieldDeclaration))
-                        {
-                            context.Advance();
-                            if (context.TryRead(TokenType.Keyword, out Token fieldNameToken))
-                            {
-                                string fieldName = context.GetSourceCode(fieldNameToken).ToString();
-                                FieldDefinition field = new(default, fieldName, context.GetRange(fieldStart), context.module);
-                                fields.Add(field);
-                                fieldStart = context.tokenIndex;
-                            }
-
-                            context.AdvanceIf(TokenType.Semicolon);
-                            context.SkipNewlines();
-                        }
-
-                        context.AdvanceIf(TokenType.CloseBrace);
-                        return new TypeDefinition(structName, fields.ToArray(), context.GetRange(start), context.module);
-                    }
-                    else
-                    {
-                        throw new ExpectedNameOfDeclaredType(structNameToken, context.State);
-                    }
+                    return ParseTypeDefinition(ref context);
                 }
                 else if (tokenText.SequenceEqual(KeywordMap.FieldDeclaration))
                 {
@@ -346,47 +383,61 @@ namespace Scripting
                 }
                 else if (tokenText.SequenceEqual(KeywordMap.FunctionDeclaration))
                 {
-                    // fn doSomething(var a, bar b) { }
-                    context.Advance();
-                    if (context.TryRead(TokenType.Keyword, out Token nameToken))
-                    {
-
-                    }
+                    return ParseFunctionDefinition(ref context);
                 }
             }
 
-            if (context.IsNext(TokenType.Keyword) && context.TryPeekAt(1, TokenType.Dot))
+            if (context.LooksLikeMemberAssignment())
             {
-                int lookAhead = context.tokenIndex;
-                lookAhead++;
-                while (lookAhead + 1 < context.tokens.Count && context.tokens[lookAhead].type == TokenType.Dot && context.tokens[lookAhead + 1].type == TokenType.Keyword)
+                int saved = context.tokenIndex;
+                Expression target = ParsePrimary(ref context);
+                if (target is MemberAccess access)
                 {
-                    lookAhead += 2;
-                }
-
-                if (lookAhead < context.tokens.Count && context.tokens[lookAhead].type == TokenType.Equals)
-                {
-                    int saved = context.tokenIndex;
-                    Expression target = ParsePrimary(ref context);
-                    if (target is MemberAccess access && context.AdvanceIf(TokenType.Equals))
+                    if (context.AdvanceIf(TokenType.Equals))
                     {
                         Expression value = ParseExpression(ref context);
                         MemberAssignment memberAssignment = new(access.target, access.member, value, context.GetRange(start), context.module);
                         return new ExpressionStatement(memberAssignment, memberAssignment.range, context.module);
                     }
 
-                    context.tokenIndex = saved;
+                    if (context.TryReadCompoundAssign(out BinaryOperator compoundOp))
+                    {
+                        Expression rhs = ParseExpression(ref context);
+                        MemberAccess read = new(access.target, access.member, access.range, context.module);
+                        Range valueRange = new(access.range.Start, rhs.range.End);
+                        Binary combined = new(read, rhs, compoundOp, valueRange, context.module);
+                        MemberAssignment memberAssignment = new(access.target, access.member, combined, context.GetRange(start), context.module);
+                        return new ExpressionStatement(memberAssignment, memberAssignment.range, context.module);
+                    }
                 }
+
+                context.tokenIndex = saved;
             }
 
-            if (context.TryPeek(TokenType.Keyword, out Token idToken) && context.TryPeekAt(1, TokenType.Equals))
+            if (context.TryPeek(TokenType.Keyword, out Token idToken))
             {
-                context.Advance();
-                context.Advance();
-                Expression value = ParseExpression(ref context);
-                string name = context.GetSourceCode(idToken).ToString();
-                Assignment assignment = new(name, value, context.GetRange(start), context.module);
-                return new ExpressionStatement(assignment, assignment.range, context.module);
+                if (context.TryPeekAt(1, TokenType.Equals))
+                {
+                    context.Advance();
+                    context.Advance();
+                    Expression value = ParseExpression(ref context);
+                    string name = context.GetSourceCode(idToken).ToString();
+                    Assignment assignment = new(name, value, context.GetRange(start), context.module);
+                    return new ExpressionStatement(assignment, assignment.range, context.module);
+                }
+
+                if (context.TryPeekCompoundAssignAt(1, out BinaryOperator compoundOp))
+                {
+                    context.Advance();
+                    context.TryReadCompoundAssign(out _);
+                    Expression rhs = ParseExpression(ref context);
+                    string name = context.GetSourceCode(idToken).ToString();
+                    Identifier read = new(name, idToken.range, context.module);
+                    Range valueRange = new(idToken.range.Start, rhs.range.End);
+                    Binary combined = new(read, rhs, compoundOp, valueRange, context.module);
+                    Assignment assignment = new(name, combined, context.GetRange(start), context.module);
+                    return new ExpressionStatement(assignment, assignment.range, context.module);
+                }
             }
 
             // block statement
@@ -397,6 +448,127 @@ namespace Scripting
 
             Expression expr = ParseExpression(ref context);
             return new ExpressionStatement(expr, expr.range, context.module);
+        }
+
+        private static Expression ParseTypeExpression(ref Context context)
+        {
+            int start = context.tokenIndex;
+            if (!context.TryRead(TokenType.Keyword, out Token nameToken))
+            {
+                throw new ExpectedNameOfTypeToConstruct(nameToken, context.State);
+            }
+
+            string name = context.GetSourceCode(nameToken).ToString();
+            Expression expr = new Identifier(name, nameToken.range, context.module);
+            while (context.AdvanceIf(TokenType.Dot))
+            {
+                if (context.TryRead(TokenType.Keyword, out Token memberToken))
+                {
+                    string member = context.GetSourceCode(memberToken).ToString();
+                    expr = new MemberAccess(expr, member, context.GetRange(start), context.module);
+                }
+            }
+
+            return expr;
+        }
+
+        private static TypeDefinition ParseTypeDefinition(ref Context context)
+        {
+            int start = context.tokenIndex;
+            context.Advance(); // consume 'struct'
+            if (!context.TryRead(TokenType.Keyword, out Token structNameToken))
+            {
+                throw new ExpectedNameOfDeclaredType(structNameToken, context.State);
+            }
+
+            List<FieldDefinition> fields = new();
+            List<FunctionDefinition> methods = new();
+            List<TypeDefinition> types = new();
+            string structName = context.GetSourceCode(structNameToken).ToString();
+            context.SkipNewlines();
+            context.AdvanceIf(TokenType.OpenBrace);
+            context.SkipNewlines();
+
+            int memberStart = context.tokenIndex;
+            while (context.TryPeek(TokenType.Keyword, out Token memberToken))
+            {
+                ReadOnlySpan<char> memberText = context.GetSourceCode(memberToken);
+                if (memberText.SequenceEqual(KeywordMap.FieldDeclaration))
+                {
+                    context.Advance();
+                    if (context.TryRead(TokenType.Keyword, out Token fieldNameToken))
+                    {
+                        string fieldName = context.GetSourceCode(fieldNameToken).ToString();
+                        FieldDefinition field = new(default, fieldName, context.GetRange(memberStart), context.module);
+                        fields.Add(field);
+                    }
+                }
+                else if (memberText.SequenceEqual(KeywordMap.FunctionDeclaration))
+                {
+                    methods.Add(ParseFunctionDefinition(ref context));
+                }
+                else if (memberText.SequenceEqual(KeywordMap.TypeDeclaration))
+                {
+                    types.Add(ParseTypeDefinition(ref context));
+                }
+                else
+                {
+                    break;
+                }
+
+                context.AdvanceIf(TokenType.Semicolon);
+                context.SkipNewlines();
+                memberStart = context.tokenIndex;
+            }
+
+            context.AdvanceIf(TokenType.CloseBrace);
+            return new TypeDefinition(structName, fields.ToArray(), methods.ToArray(), types.ToArray(), context.GetRange(start), context.module);
+        }
+
+        private static FunctionDefinition ParseFunctionDefinition(ref Context context)
+        {
+            int start = context.tokenIndex;
+            context.Advance(); // consume 'fn'
+            if (!context.TryRead(TokenType.Keyword, out Token nameToken))
+            {
+                throw new ExpectedNameOfFunction(context.State);
+            }
+
+            string fnName = context.GetSourceCode(nameToken).ToString();
+            List<string> parameters = new();
+            context.AdvanceIf(TokenType.OpenParenthesis);
+            while (context.TryPeek(out Token next) && next.type != TokenType.CloseParenthesis)
+            {
+                if (parameters.Count > 0)
+                {
+                    context.AdvanceIf(TokenType.Comma);
+                }
+
+                if (context.TryRead(TokenType.Keyword, out Token paramKeyword))
+                {
+                    ReadOnlySpan<char> paramKeywordText = context.GetSourceCode(paramKeyword);
+                    if (!paramKeywordText.SequenceEqual(KeywordMap.VariableDeclaration))
+                    {
+                        throw new ExpectedParameterDeclaration(paramKeyword, context.State);
+                    }
+
+                    if (!context.TryRead(TokenType.Keyword, out Token paramNameToken))
+                    {
+                        throw new ExpectedNameOfParameter(context.State);
+                    }
+
+                    parameters.Add(context.GetSourceCode(paramNameToken).ToString());
+                }
+                else
+                {
+                    break;
+                }
+            }
+
+            context.AdvanceIf(TokenType.CloseParenthesis);
+            context.SkipNewlines();
+            Block body = ParseBlock(ref context);
+            return new FunctionDefinition(fnName, parameters.ToArray(), body, context.GetRange(start), context.module);
         }
 
         private static Block ParseBlock(ref Context context)
@@ -563,10 +735,111 @@ namespace Scripting
                 SkipNewlines();
             }
 
+            public readonly bool TryPeekAdjacent(out Token next)
+            {
+                int index = tokenIndex + 1;
+                if (index < tokens.Count && tokens[tokenIndex].range.End.Value == tokens[index].range.Start.Value)
+                {
+                    next = tokens[index];
+                    return true;
+                }
+
+                next = default;
+                return false;
+            }
+
             public readonly bool TryPeekAt(int offset, TokenType type)
             {
                 int index = tokenIndex + offset;
                 return index < tokens.Count && tokens[index].type == type;
+            }
+
+            public readonly bool LooksLikeMemberAssignment()
+            {
+                if (!IsNext(TokenType.Keyword) || !TryPeekAt(1, TokenType.Dot))
+                {
+                    return false;
+                }
+
+                int lookAhead = tokenIndex + 1;
+                while (lookAhead + 1 < tokens.Count && tokens[lookAhead].type == TokenType.Dot && tokens[lookAhead + 1].type == TokenType.Keyword)
+                {
+                    lookAhead += 2;
+                }
+
+                if (lookAhead >= tokens.Count)
+                {
+                    return false;
+                }
+
+                if (tokens[lookAhead].type == TokenType.Equals)
+                {
+                    return true;
+                }
+
+                return TryPeekCompoundAssignAt(lookAhead - tokenIndex, out _);
+            }
+
+            public readonly bool TryPeekCompoundAssignAt(int offset, out BinaryOperator op)
+            {
+                int index = tokenIndex + offset;
+                if (index + 1 >= tokens.Count)
+                {
+                    op = default;
+                    return false;
+                }
+
+                Token first = tokens[index];
+                Token second = tokens[index + 1];
+                if (first.range.End.Value != second.range.Start.Value || second.type != TokenType.Equals)
+                {
+                    op = default;
+                    return false;
+                }
+
+                if (first.type == TokenType.Plus)
+                {
+                    op = BinaryOperator.Add;
+                    return true;
+                }
+
+                if (first.type == TokenType.Minus)
+                {
+                    op = BinaryOperator.Subtract;
+                    return true;
+                }
+
+                if (first.type == TokenType.Asterisk)
+                {
+                    op = BinaryOperator.Multiply;
+                    return true;
+                }
+
+                if (first.type == TokenType.Slash)
+                {
+                    op = BinaryOperator.Divide;
+                    return true;
+                }
+
+                if (first.type == TokenType.Percent)
+                {
+                    op = BinaryOperator.Modulus;
+                    return true;
+                }
+
+                op = default;
+                return false;
+            }
+
+            public bool TryReadCompoundAssign(out BinaryOperator op)
+            {
+                if (TryPeekCompoundAssignAt(0, out op))
+                {
+                    tokenIndex += 2;
+                    return true;
+                }
+
+                return false;
             }
 
             public bool TryPeekKeyword(ReadOnlySpan<char> keyword)

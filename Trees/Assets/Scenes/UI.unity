@@ -157,7 +157,7 @@ RectTransform:
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 1751, y: 1090}
+  m_SizeDelta: {x: 1804, y: 965}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &93860747
 MonoBehaviour:
@@ -171,6 +171,43 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 314404e8a55cfa84284560c7abbefe33, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::HUD.HUDScreen
+--- !u!84 &254033359
+RenderTexture:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: 
+  m_ImageContentsHash:
+    serializedVersion: 2
+    Hash: 00000000000000000000000000000000
+  m_IsAlphaChannelOptional: 0
+  serializedVersion: 6
+  m_Width: 1804
+  m_Height: 965
+  m_AntiAliasing: 1
+  m_MipCount: -1
+  m_DepthStencilFormat: 94
+  m_ColorFormat: 4
+  m_MipMap: 0
+  m_GenerateMips: 1
+  m_SRGB: 1
+  m_UseDynamicScale: 0
+  m_UseDynamicScaleExplicit: 0
+  m_BindMS: 0
+  m_EnableCompatibleFormat: 1
+  m_EnableRandomWrite: 0
+  m_TextureSettings:
+    serializedVersion: 2
+    m_FilterMode: 1
+    m_Aniso: 1
+    m_MipBias: 0
+    m_WrapU: 1
+    m_WrapV: 1
+    m_WrapW: 1
+  m_Dimension: 2
+  m_VolumeDepth: 1
+  m_ShadowSamplingMode: 2
 --- !u!1 &603478519
 GameObject:
   m_ObjectHideFlags: 0
@@ -298,9 +335,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2b8eef1589873f84082b33a64e3f48b8, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::HUD.HUDBox
+  alwaysUpdate: 0
   color:
     content: '"#FFFFFF"'
---- !u!114 &964105376
+--- !u!114 &998025740
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -312,9 +350,9 @@ MonoBehaviour:
   m_Script: {fileID: 19101, guid: 0000000000000000e000000000000000, type: 0}
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.dll::UnityEngine.UIElements.PanelSettings
-  themeUss: {fileID: -4733365628477956816, guid: c1dee35fff39d094ca9eaa294e26697d, type: 3}
+  themeUss: {fileID: 0}
   m_DisableNoThemeWarning: 0
-  m_TargetTexture: {fileID: 2010555172}
+  m_TargetTexture: {fileID: 254033359}
   m_RenderMode: 0
   m_ColliderUpdateMode: 0
   m_ColliderIsTrigger: 1
@@ -359,7 +397,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1062010575}
-  - component: {fileID: 1062010574}
+  - component: {fileID: 1062010576}
   m_Layer: 0
   m_Name: Tester
   m_TagString: Untagged
@@ -367,56 +405,6 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &1062010574
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1062010573}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: d7479e93399488943aa5bd429d6c1aee, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::UITester
-  backgroundColor: {r: 0.28627455, g: 1, b: 0.8195118, a: 1}
-  fontColor: {r: 0, g: 0.38457644, b: 1, a: 1}
-  fontSize:
-    serializedVersion: 2
-    m_Curve:
-    - serializedVersion: 3
-      time: 0
-      value: 24
-      inSlope: -32
-      outSlope: -32
-      tangentMode: 34
-      weightedMode: 0
-      inWeight: 0
-      outWeight: 0.33333334
-    - serializedVersion: 3
-      time: 0.5
-      value: 8
-      inSlope: 0
-      outSlope: 0
-      tangentMode: 34
-      weightedMode: 0
-      inWeight: 0.33333334
-      outWeight: 0.33333334
-    - serializedVersion: 3
-      time: 1
-      value: 24
-      inSlope: 32
-      outSlope: 32
-      tangentMode: 34
-      weightedMode: 0
-      inWeight: 0.33333334
-      outWeight: 0
-    m_PreInfinity: 2
-    m_PostInfinity: 2
-    m_RotationOrder: 4
-  animationSpeed: 1
-  panelSettings: {fileID: 964105376}
-  themeStyleSheet: {fileID: 0}
 --- !u!4 &1062010575
 Transform:
   m_ObjectHideFlags: 0
@@ -432,6 +420,47 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 5}
+--- !u!114 &1062010576
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1062010573}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d7479e93399488943aa5bd429d6c1aee, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::UITester
+  backgroundColor: {r: 1, g: 0, b: 0, a: 1}
+  fontColor: {r: 1, g: 1, b: 1, a: 1}
+  fontSize:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 24
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    - serializedVersion: 3
+      time: 1
+      value: 24
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  animationSpeed: 1
+  panelSettings: {fileID: 998025740}
+  themeStyleSheet: {fileID: 0}
 --- !u!1 &1153628180
 GameObject:
   m_ObjectHideFlags: 0
@@ -598,6 +627,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 06f8aff55b22a8448b9be1a2b34ee63d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::HUD.HUDLabel
+  alwaysUpdate: 0
   content:
     content: 'var space = '' ''
 
@@ -608,6 +638,8 @@ MonoBehaviour:
     content: '"#8B00FF"'
   fontSize:
     content: 16
+  alignment: 4
+  fontStyle: 0
 --- !u!224 &1522922766
 RectTransform:
   m_ObjectHideFlags: 0
@@ -656,6 +688,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2b8eef1589873f84082b33a64e3f48b8, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::HUD.HUDBox
+  alwaysUpdate: 0
   color:
     content: '"#FFFFFF"'
 --- !u!224 &1627129347
@@ -677,43 +710,50 @@ RectTransform:
   m_AnchoredPosition: {x: 10, y: 10}
   m_SizeDelta: {x: 100, y: 100}
   m_Pivot: {x: 0, y: 0}
---- !u!84 &2010555172
-RenderTexture:
+--- !u!1 &1812193392
+GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: 
-  m_ImageContentsHash:
-    serializedVersion: 2
-    Hash: 00000000000000000000000000000000
-  m_IsAlphaChannelOptional: 0
   serializedVersion: 6
-  m_Width: 1751
-  m_Height: 1090
-  m_AntiAliasing: 1
-  m_MipCount: -1
-  m_DepthStencilFormat: 94
-  m_ColorFormat: 4
-  m_MipMap: 0
-  m_GenerateMips: 1
-  m_SRGB: 1
-  m_UseDynamicScale: 0
-  m_UseDynamicScaleExplicit: 0
-  m_BindMS: 0
-  m_EnableCompatibleFormat: 1
-  m_EnableRandomWrite: 0
-  m_TextureSettings:
-    serializedVersion: 2
-    m_FilterMode: 1
-    m_Aniso: 1
-    m_MipBias: 0
-    m_WrapU: 1
-    m_WrapV: 1
-    m_WrapW: 1
-  m_Dimension: 2
-  m_VolumeDepth: 1
-  m_ShadowSamplingMode: 2
+  m_Component:
+  - component: {fileID: 1812193394}
+  - component: {fileID: 1812193393}
+  m_Layer: 0
+  m_Name: IMGUI
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1812193393
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1812193392}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 92a54d38bdd4052498caadb9101071c7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: '::'
+--- !u!4 &1812193394
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1812193392}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 5, y: 400, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &2026175140
 GameObject:
   m_ObjectHideFlags: 0
@@ -743,6 +783,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2b8eef1589873f84082b33a64e3f48b8, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::HUD.HUDBox
+  alwaysUpdate: 0
   color:
     content: '"#FFFFFF"'
 --- !u!224 &2026175142
@@ -772,3 +813,4 @@ SceneRoots:
   - {fileID: 603478522}
   - {fileID: 93860746}
   - {fileID: 1062010575}
+  - {fileID: 1812193394}

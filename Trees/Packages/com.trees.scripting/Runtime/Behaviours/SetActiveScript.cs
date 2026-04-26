@@ -13,7 +13,8 @@ namespace Scripting
             if (target != null)
             {
                 UpdateBindings();
-                target.SetActive(Evaluate(expression));
+                Value value = interpreter.Evaluate(expression.content);
+                target.SetActive(value.Deserialize<bool>());
             }
         }
     }

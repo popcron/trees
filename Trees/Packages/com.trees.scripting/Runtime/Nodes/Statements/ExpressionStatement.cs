@@ -5,7 +5,7 @@ namespace Scripting
 {
     public class ExpressionStatement : Statement
     {
-        public readonly Expression expression;
+        public Expression expression;
 
         public override int ChildCount => 1;
 

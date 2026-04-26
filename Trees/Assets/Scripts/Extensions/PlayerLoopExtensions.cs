@@ -39,7 +39,7 @@ public static class PlayerLoopExtensions
     public static ref PlayerLoopSystem GetSubSystem<T>(this ref PlayerLoopSystem playerLoopSystem)
     {
         Type systemType = typeof(T);
-        PlayerLoopSystem[] subSystems = playerLoopSystem.subSystemList;
+        ref PlayerLoopSystem[] subSystems = ref playerLoopSystem.subSystemList;
         for (int i = 0; i < subSystems.Length; i++)
         {
             ref PlayerLoopSystem subSystem = ref subSystems[i];

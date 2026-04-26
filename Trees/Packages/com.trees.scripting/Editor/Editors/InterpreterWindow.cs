@@ -12,18 +12,14 @@ namespace Scripting
         private TextField inputField;
         private TextField outputField;
         private ScrollView bindingsView;
-
-        // TODO: populate from parser/interpreter errors, then call squiggleLayer.MarkDirtyRepaint()
         private readonly List<(Range range, Color color)> diagnostics = new();
         private VisualElement squiggleLayer;
 
         private void CreateGUI()
         {
-            // todo: expose a dropdown that lets the user select which environment to inspect
             rootVisualElement.style.flexDirection = FlexDirection.Column;
             rootVisualElement.style.flexGrow = 1;
 
-            // top row: bindings (left) + input (right)
             VisualElement topRow = new();
             topRow.style.flexGrow = 1;
             topRow.style.flexBasis = 0;
@@ -52,18 +48,15 @@ namespace Scripting
                 }
 
                 input.enableRichText = false;
-
                 VisualElement inputParent = input.parent;
                 inputParent.Add(inputOverlay);
                 EditorConstants.ConfigureOverlayLabel(input, inputOverlay);
-
                 EditorConstants.HighlightInto(ScriptingLibrary.interpreter, inputField.value, inputOverlay);
 
                 squiggleLayer = new VisualElement { pickingMode = PickingMode.Ignore };
                 EditorConstants.PositionAsInputOverlay(squiggleLayer, input);
                 inputParent.Add(squiggleLayer);
 
-                // monospace, so one measurement gives us the cell size for every glyph
                 Vector2 cell = inputOverlay.MeasureTextSize("M", 0, MeasureMode.Undefined, 0, MeasureMode.Undefined);
                 float charW = cell.x;
                 float lineH = cell.y;
@@ -81,7 +74,6 @@ namespace Scripting
 
                     foreach ((Range range, Color color) in diagnostics)
                     {
-                        // walk to (line, col) of start; cheap because diagnostics list is short
                         int start = range.Start.Value;
                         int end = range.End.Value;
                         int length = end - start;

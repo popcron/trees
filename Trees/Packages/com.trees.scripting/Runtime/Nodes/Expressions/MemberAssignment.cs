@@ -5,9 +5,9 @@ namespace Scripting
 {
     public class MemberAssignment : Expression
     {
-        public readonly Expression target;
+        public Expression target;
         public readonly string member;
-        public readonly Expression value;
+        public Expression value;
 
         public override int ChildCount => 2;
 

@@ -5,7 +5,7 @@ namespace Scripting
 {
     public class If : Statement
     {
-        public readonly Expression condition;
+        public Expression condition;
         public readonly Statement body;
         public readonly Statement elseBody;
 

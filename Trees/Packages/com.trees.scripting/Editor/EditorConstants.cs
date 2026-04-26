@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Reflection;
 using System.Text;
 using UnityEditor;
 using UnityEngine;
@@ -9,6 +11,7 @@ namespace Scripting
     internal static class EditorConstants
     {
         public const int FontSize = 13;
+        public const int LineHeight = 15;
         public const int IndentWidth = 4;
         public const string SourceCodePrefKey = "InterpreterWindow.SourceCode";
         public const string TextInputClassName = "unity-text-element--inner-input-field-component";
@@ -16,6 +19,7 @@ namespace Scripting
         private const string IndentString = "    ";
 
         private static readonly StringBuilder stringBuilder = new();
+        private static readonly Dictionary<Type, FieldInfo> interpreterFields = new();
         private static Font monospaceFont;
 
         public static Font Font
@@ -40,9 +44,26 @@ namespace Scripting
         public static Interpreter GetInterpreter(SerializedProperty property)
         {
             UnityEngine.Object target = property.serializedObject.targetObject;
-            if (target is IContainsInterpreter containsInterpreter)
+            if (target != null)
             {
-                return containsInterpreter.Interpreter;
+                Type type = target.GetType();
+                while (type != null)
+                {
+                    if (!interpreterFields.TryGetValue(type, out FieldInfo field))
+                    {
+                        field = type.GetField("interpreter", BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public);
+                        interpreterFields.Add(type, field);
+                    }
+
+                    if (field != null)
+                    {
+                        return (Interpreter)field.GetValue(target);
+                    }
+                    else
+                    {
+                        type = type.BaseType;
+                    }
+                }
             }
 
             return ScriptingLibrary.interpreter;
@@ -77,16 +98,23 @@ namespace Scripting
             input.style.fontSize = FontSize;
             input.style.whiteSpace = WhiteSpace.NoWrap;
             input.style.color = new Color(0, 0, 0, 0);
+            input.style.unityTextAlign = TextAnchor.UpperLeft;
             return input;
         }
 
         public static void PositionAsInputOverlay(VisualElement overlay, VisualElement input)
         {
             overlay.style.position = Position.Absolute;
-            overlay.style.left = input.style.paddingLeft;
-            overlay.style.top = input.style.paddingTop;
-            overlay.style.right = input.style.paddingRight;
-            overlay.style.bottom = input.style.paddingBottom;
+            SyncOverlayToInput(overlay, input);
+            input.RegisterCallback<GeometryChangedEvent>(_ => SyncOverlayToInput(overlay, input));
+        }
+
+        private static void SyncOverlayToInput(VisualElement overlay, VisualElement input)
+        {
+            overlay.style.left = input.resolvedStyle.paddingLeft;
+            overlay.style.top = input.resolvedStyle.paddingTop;
+            overlay.style.right = input.resolvedStyle.paddingRight;
+            overlay.style.bottom = input.resolvedStyle.paddingBottom;
         }
 
         public static void ConfigureOverlayLabel(VisualElement input, Label overlay)
@@ -96,6 +124,7 @@ namespace Scripting
             overlay.style.fontSize = FontSize;
             overlay.style.whiteSpace = WhiteSpace.Pre;
             overlay.style.unityFontDefinition = NoFontAssetDefinition();
+            overlay.style.unityTextAlign = TextAnchor.UpperLeft;
         }
 
         public static void ConfigureErrorLabel(Label errorLabel)

@@ -89,6 +89,12 @@ namespace Scripting
                         stringBuilder.Append(word);
                         stringBuilder.Append("</color>");
                     }
+                    else if (interpreter.ContainsFunctionVariable(word) || interpreter.ContainsFunctionBinding(word))
+                    {
+                        stringBuilder.Append("<color=").Append(SyntaxColors.FunctionColor).Append('>');
+                        stringBuilder.Append(word);
+                        stringBuilder.Append("</color>");
+                    }
                     else if (interpreter.ContainsVariable(word))
                     {
                         stringBuilder.Append("<color=").Append(SyntaxColors.VariableColor).Append('>');

@@ -15,6 +15,7 @@ namespace Scripting
         public const string VariableDeclaration = "var";
         public const string FunctionDeclaration = "fn";
         public const string CreateInstance = "new";
+        public const string Self = "self";
 
         public static readonly string[] AllKeywords = new[]
         {
@@ -29,6 +30,7 @@ namespace Scripting
             VariableDeclaration,
             FunctionDeclaration,
             CreateInstance,
+            Self,
         };
 
         private static readonly ulong[] hashes = new ulong[AllKeywords.Length];

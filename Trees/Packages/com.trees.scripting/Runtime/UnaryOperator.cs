@@ -2,7 +2,8 @@
 {
     public enum UnaryOperator
     {
-        Negate = 1,
-        Not = 2
+        Uninitialized = 0,
+        Negate,
+        Not
     }
 }

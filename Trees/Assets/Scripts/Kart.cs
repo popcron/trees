@@ -1,10 +1,9 @@
-﻿using UnityEngine;
+﻿using UI;
+using UnityEngine;
 using UnityEngine.InputSystem;
 
 public class Kart : MonoBehaviour
 {
-    private static GUIStyle labelStyle;
-
     public Rigidbody carRigidbody;
     public WheelSettings settings;
     public Transform cameraAnchor;
@@ -16,25 +15,26 @@ public class Kart : MonoBehaviour
     public float maxSteerAngle = 50f;
     public RaycastSpring[] drivingWheels = { };
     public RaycastSpring[] steeringWheels = { };
-    public float gasInput = 0f;
-    public float steerInput = 0f;
-    public float breakInput = 0f;
-    public float handbrakeInput = 0f;
     public float smoothing = 3f;
     public float guiScale = 100f;
     public float smoothedWheelSpeed;
     public float smoothedCarSpeed;
-    public Vector3 originalPosition;
-    public Quaternion originalRotation;
     public float desiredSteerInput = 0f;
     public float desiredGasInput = 0f;
     public float desiredBreakInput = 0f;
     public float desiredHandbrakeInput = 0f;
     public Vector2 desiredPitchYaw = default;
-    public bool desiredResetCar = false;
-    public bool desiredResetSettings = false;
+    public bool desiredRespawn = false;
+    public bool desiredReset = false;
 
     private WheelSettings activeSettings;
+    private Vector3 originalPosition;
+    private Quaternion originalRotation;
+    private float gasInput = 0f;
+    private float steerInput = 0f;
+    private float breakInput = 0f;
+    private float handbrakeInput = 0f;
+    private bool showTyreGUI = true;
 
     private void Awake()
     {
@@ -43,77 +43,19 @@ public class Kart : MonoBehaviour
         activeSettings = Instantiate(settings);
     }
 
+    private void OnEnable()
+    {
+        UIEngine.navigationEnabled = false;
+    }
+
+    private void OnDisable()
+    {
+        UIEngine.navigationEnabled = true;
+    }
+
     private void Update()
     {
-        desiredSteerInput = 0f;
-        desiredGasInput = 0f;
-        desiredBreakInput = 0f;
-        desiredHandbrakeInput = 0f;
-        desiredResetCar = false;
-        desiredResetSettings = false;
-        if (Keyboard.current is Keyboard keyboard)
-        {
-            if (keyboard.aKey.isPressed)
-            {
-                desiredSteerInput -= 1f;
-            }
-
-            if (keyboard.dKey.isPressed)
-            {
-                desiredSteerInput += 1f;
-            }
-
-            if (keyboard.wKey.isPressed)
-            {
-                desiredGasInput += 1f;
-            }
-
-            if (keyboard.sKey.isPressed)
-            {
-                desiredBreakInput += 1f;
-            }
-
-            if (keyboard.spaceKey.isPressed)
-            {
-                desiredHandbrakeInput = 1f;
-            }
-
-            if (keyboard.rKey.isPressed)
-            {
-                desiredResetCar = true;
-            }
-
-            if (keyboard.tKey.isPressed)
-            {
-                desiredResetSettings = true;
-            }
-        }
-
-        if (Mouse.current is Mouse mouse)
-        {
-            //desiredPitchYaw.x += mouse.delta.y.ReadValue() * 0.1f;
-            //desiredPitchYaw.y += mouse.delta.x.ReadValue() * 0.1f;
-        }
-
-        if (Gamepad.current is Gamepad gamepad)
-        {
-            desiredSteerInput += gamepad.leftStick.x.ReadValue();
-            desiredBreakInput += gamepad.leftTrigger.ReadValue();
-            desiredGasInput += gamepad.rightTrigger.ReadValue();
-            desiredPitchYaw.x += gamepad.rightStick.y.ReadValue() * 2f;
-            desiredPitchYaw.y += gamepad.rightStick.x.ReadValue() * 2f;
-            if (gamepad.buttonEast.isPressed)
-            {
-                desiredHandbrakeInput = 1f;
-            }
-
-            if (gamepad.buttonNorth.wasPressedThisFrame)
-            {
-                desiredResetCar = true;
-            }
-        }
-
-        if (desiredResetCar)
+        if (desiredRespawn)
         {
             carRigidbody.linearVelocity = Vector3.zero;
             carRigidbody.angularVelocity = Vector3.zero;
@@ -122,7 +64,7 @@ public class Kart : MonoBehaviour
             desiredPitchYaw = Vector2.zero;
         }
 
-        if (desiredResetSettings)
+        if (desiredReset)
         {
             activeSettings = Instantiate(settings);
         }
@@ -151,6 +93,118 @@ public class Kart : MonoBehaviour
         desiredPitchYaw.x = Mathf.Clamp(desiredPitchYaw.x, -89, 89);
         cameraAnchor.localEulerAngles = new Vector3(desiredPitchYaw.x, desiredPitchYaw.y, 0f);
         steeringWheel.localEulerAngles = new Vector3(0f, steerInput * Mathf.PI * 2f, 0f);
+
+        if (Keyboard.current != null && Keyboard.current.f2Key.wasPressedThisFrame)
+        {
+            showTyreGUI = !showTyreGUI;
+        }
+
+        IMUILayout.Label("T = factory settings");
+        IMUILayout.Label("R/Xbox Y/Triangle = respawn");
+        IMUILayout.Label("Space/Xbox B/Circle = Handbrake");
+        IMUILayout.Label("F2 = Hide/Show Tyre GUI");
+        IMUILayout.Space(50f);
+        SettingsGUI();
+
+        float averageWheelAngularVelocity = 0f;
+        float averageWheelRadius = 0f;
+        for (int i = 0; i < drivingWheels.Length; i++)
+        {
+            averageWheelAngularVelocity += drivingWheels[i].wheelAngularVelocity;
+            averageWheelRadius += drivingWheels[i].wheelRadius;
+        }
+
+        averageWheelAngularVelocity /= drivingWheels.Length;
+        averageWheelRadius /= drivingWheels.Length;
+        float wheelSurfaceSpeed = averageWheelAngularVelocity * averageWheelRadius;
+        float carSpeed = Vector3.Dot(carRigidbody.transform.forward, carRigidbody.linearVelocity);
+        float t = 1f - Mathf.Exp(-smoothing * Time.deltaTime);
+        smoothedWheelSpeed = Mathf.Lerp(smoothedWheelSpeed, wheelSurfaceSpeed, t);
+        smoothedCarSpeed = Mathf.Lerp(smoothedCarSpeed, carSpeed, t);
+
+        Rect carRect = new(Screen.width - 300f, Screen.height - 60f, 300f, 60f);
+        using (IMUILayout.BeginArea(carRect))
+        {
+            CarGUI();
+        }
+
+        if (showTyreGUI)
+        {
+            Vector2 tyrePanelSize = new(200f, 120f);
+            for (int i = 0; i < steeringWheels.Length; i++)
+            {
+                RaycastSpring sw = steeringWheels[i];
+                if (!IMUI.Project(sw.transform.position, tyrePanelSize, null, out Rect tyreRect))
+                {
+                    continue;
+                }
+
+                using IMUILayout.Scope tyreArea = IMUILayout.BeginArea(tyreRect, i);
+                TyreGUI(sw);
+            }
+
+            for (int i = 0; i < drivingWheels.Length; i++)
+            {
+                RaycastSpring dw = drivingWheels[i];
+                if (!IMUI.Project(dw.transform.position, tyrePanelSize, null, out Rect tyreRect))
+                {
+                    continue;
+                }
+
+                using IMUILayout.Scope tyreArea = IMUILayout.BeginArea(tyreRect, i + steeringWheels.Length);
+                TyreGUI(dw);
+            }
+        }
+
+        float pedalWidth = 30f;
+        float pedalHeight = 70f;
+        float steerWidth = 200f;
+        float panelWidth = steerWidth;
+        float panelHeight = 220f;
+        Rect inputArea = new(Screen.width * 0.5f - panelWidth * 0.5f, Screen.height - panelHeight, panelWidth, panelHeight);
+        using (IMUILayout.BeginArea(inputArea))
+        {
+            SteerBar(desiredSteerInput, steerWidth, pedalHeight, new Color(0.3f, 0.65f, 1f));
+            IMUILayout.Space(8f);
+            using (IMUILayout.BeginHorizontal(panelWidth))
+            {
+                IMUILayout.FlexibleSpace();
+                Pedal(desiredGasInput, pedalWidth, pedalHeight, new Color(0.25f, 0.85f, 0.3f));
+                IMUILayout.Space(8f);
+                Pedal(desiredBreakInput, pedalWidth, pedalHeight, new Color(0.9f, 0.25f, 0.25f));
+                IMUILayout.Space(8f);
+                Pedal(desiredHandbrakeInput, pedalWidth, pedalHeight, new Color(0.95f, 0.7f, 0.15f));
+                IMUILayout.FlexibleSpace();
+            }
+        }
+    }
+
+    private void SettingsGUI()
+    {
+        SliderRow("Max Steer Angle: ", ref maxSteerAngle, 0f, 180f, "F1");
+        SliderRow("Center of Mass Y: ", ref centerOfMass.y, -1f, 1f, "F2");
+        SliderRow("Center of Mass Z: ", ref centerOfMass.z, -1f, 1f, "F2");
+        SliderRow("Brake Torque: ", ref activeSettings.brakeTorque, 0f, 100f, "F2");
+        SliderRow("Damping Ratio: ", ref activeSettings.dampingRatio, 0f, 1.5f, "F2");
+        SliderRow("Peak Friction μ: ", ref activeSettings.peakFrictionCoefficient, 0.2f, 2f, "F2");
+        SliderRow("Lateral Stiffness: ", ref activeSettings.lateralStiffness, 100f, 3000f, "F0");
+        SliderRow("Longitudinal Stiffness: ", ref activeSettings.longitudinalStiffness, 10f, 300f, "F0");
+        SliderRow("Front ARB: ", ref activeSettings.frontAntiRollStiffness, 0f, 15000f, "F0");
+        SliderRow("Rear ARB: ", ref activeSettings.rearAntiRollStiffness, 0f, 15000f, "F0");
+        SliderRow("Forward Torque Scale: ", ref activeSettings.engineTorqueScale, 0f, 100f, "F2");
+        SliderRow("Reverse Torque Scale: ", ref activeSettings.reverseTorqueScale, 0f, 100f, "F2");
+        SliderRow("Forward Top Speed: ", ref activeSettings.forwardTopSpeed, 0f, 100f, "F2");
+        SliderRow("Reverse Top Speed: ", ref activeSettings.reverseTopSpeed, 0f, 100f, "F2");
+    }
+
+    private static void SliderRow(string label, ref float value, float min, float max, string format, [System.Runtime.CompilerServices.CallerLineNumber] int line = 0)
+    {
+        using (IMUILayout.BeginHorizontal(400f, key: line))
+        {
+            IMUILayout.Label(label, 200f);
+            IMUILayout.Label(value.ToString(format), 100f);
+            IMUILayout.HorizontalSlider(ref value, min, max, 200f);
+        }
     }
 
     private void FixedUpdate()
@@ -188,228 +242,55 @@ public class Kart : MonoBehaviour
         EditorGizmos.DrawLine(carRigidbody.position, worldCenterOfMass, 3f);
     }
 
-    private void OnGUI()
-    {
-        if (labelStyle == null)
-        {
-            labelStyle = new GUIStyle(GUI.skin.label)
-            {
-                alignment = TextAnchor.MiddleLeft,
-                fontSize = 16,
-                fontStyle = FontStyle.Normal,
-            };
-        }
-
-        GUILayout.Label("T = factory settings");
-        GUILayout.Label("R/Xbox Y/Triangle = respawn");
-        GUILayout.Label("Space/Xbox B/Circle = Handbrake");
-
-        // max steer angle slider
-        GUILayout.BeginHorizontal(GUILayout.Width(400));
-        {
-            GUILayout.Label("Max Steer Angle: ", labelStyle, GUILayout.Width(200));
-            GUILayout.Label($"{maxSteerAngle:F1}", labelStyle, GUILayout.Width(100));
-            maxSteerAngle = GUILayout.HorizontalSlider(maxSteerAngle, 0f, 180f, GUILayout.Width(200));
-        }
-        GUILayout.EndHorizontal();
-
-        // center of mass slider (-1, 1)
-        GUILayout.BeginHorizontal(GUILayout.Width(400));
-        {
-            GUILayout.Label("Center of Mass Y: ", labelStyle, GUILayout.Width(200));
-            GUILayout.Label($"{centerOfMass.y:F2}", labelStyle, GUILayout.Width(100));
-            centerOfMass.y = GUILayout.HorizontalSlider(centerOfMass.y, -1f, 1f, GUILayout.Width(200));
-        }
-        GUILayout.EndHorizontal();
-
-        GUILayout.BeginHorizontal(GUILayout.Width(400));
-        {
-            GUILayout.Label("Center of Mass Z: ", labelStyle, GUILayout.Width(200));
-            GUILayout.Label($"{centerOfMass.z:F2}", labelStyle, GUILayout.Width(100));
-            centerOfMass.z = GUILayout.HorizontalSlider(centerOfMass.z, -1f, 1f, GUILayout.Width(200));
-        }
-        GUILayout.EndHorizontal();
-
-        // brake torque
-        GUILayout.BeginHorizontal(GUILayout.Width(400));
-        {
-            GUILayout.Label("Brake Torque: ", labelStyle, GUILayout.Width(200));
-            GUILayout.Label($"{activeSettings.brakeTorque:F2}", labelStyle, GUILayout.Width(100));
-            activeSettings.brakeTorque = GUILayout.HorizontalSlider(activeSettings.brakeTorque, 0f, 100f, GUILayout.Width(200));
-        }
-        GUILayout.EndHorizontal();
-
-        GUILayout.BeginHorizontal(GUILayout.Width(400));
-        {
-            GUILayout.Label("Damping Ratio: ", labelStyle, GUILayout.Width(200));
-            GUILayout.Label($"{activeSettings.dampingRatio:F2}", labelStyle, GUILayout.Width(100));
-            activeSettings.dampingRatio = GUILayout.HorizontalSlider(activeSettings.dampingRatio, 0f, 1.5f, GUILayout.Width(200));
-        }
-        GUILayout.EndHorizontal();
-
-        GUILayout.BeginHorizontal(GUILayout.Width(400));
-        {
-            GUILayout.Label("Peak Friction μ: ", labelStyle, GUILayout.Width(200));
-            GUILayout.Label($"{activeSettings.peakFrictionCoefficient:F2}", labelStyle, GUILayout.Width(100));
-            activeSettings.peakFrictionCoefficient = GUILayout.HorizontalSlider(activeSettings.peakFrictionCoefficient, 0.2f, 2f, GUILayout.Width(200));
-        }
-        GUILayout.EndHorizontal();
-
-        GUILayout.BeginHorizontal(GUILayout.Width(400));
-        {
-            GUILayout.Label("Lateral Stiffness: ", labelStyle, GUILayout.Width(200));
-            GUILayout.Label($"{activeSettings.lateralStiffness:F0}", labelStyle, GUILayout.Width(100));
-            activeSettings.lateralStiffness = GUILayout.HorizontalSlider(activeSettings.lateralStiffness, 100f, 3000f, GUILayout.Width(200));
-        }
-        GUILayout.EndHorizontal();
-
-        GUILayout.BeginHorizontal(GUILayout.Width(400));
-        {
-            GUILayout.Label("Longitudinal Stiffness: ", labelStyle, GUILayout.Width(200));
-            GUILayout.Label($"{activeSettings.longitudinalStiffness:F0}", labelStyle, GUILayout.Width(100));
-            activeSettings.longitudinalStiffness = GUILayout.HorizontalSlider(activeSettings.longitudinalStiffness, 10f, 300f, GUILayout.Width(200));
-        }
-        GUILayout.EndHorizontal();
-
-        GUILayout.BeginHorizontal(GUILayout.Width(400));
-        {
-            GUILayout.Label("Front ARB: ", labelStyle, GUILayout.Width(200));
-            GUILayout.Label($"{activeSettings.frontAntiRollStiffness:F0}", labelStyle, GUILayout.Width(100));
-            activeSettings.frontAntiRollStiffness = GUILayout.HorizontalSlider(activeSettings.frontAntiRollStiffness, 0f, 15000f, GUILayout.Width(200));
-        }
-        GUILayout.EndHorizontal();
-
-        GUILayout.BeginHorizontal(GUILayout.Width(400));
-        {
-            GUILayout.Label("Rear ARB: ", labelStyle, GUILayout.Width(200));
-            GUILayout.Label($"{activeSettings.rearAntiRollStiffness:F0}", labelStyle, GUILayout.Width(100));
-            activeSettings.rearAntiRollStiffness = GUILayout.HorizontalSlider(activeSettings.rearAntiRollStiffness, 0f, 15000f, GUILayout.Width(200));
-        }
-        GUILayout.EndHorizontal();
-
-        // forward torque scale
-        GUILayout.BeginHorizontal(GUILayout.Width(400));
-        {
-            GUILayout.Label("Forward Torque Scale: ", labelStyle, GUILayout.Width(200));
-            GUILayout.Label($"{activeSettings.engineTorqueScale:F2}", labelStyle, GUILayout.Width(100));
-            activeSettings.engineTorqueScale = GUILayout.HorizontalSlider(activeSettings.engineTorqueScale, 0f, 100f, GUILayout.Width(200));
-        }
-        GUILayout.EndHorizontal();
-
-        // reverse torque scale
-        GUILayout.BeginHorizontal(GUILayout.Width(400));
-        {
-            GUILayout.Label("Reverse Torque Scale: ", labelStyle, GUILayout.Width(200));
-            GUILayout.Label($"{activeSettings.reverseTorqueScale:F2}", labelStyle, GUILayout.Width(100));
-            activeSettings.reverseTorqueScale = GUILayout.HorizontalSlider(activeSettings.reverseTorqueScale, 0f, 100f, GUILayout.Width(200));
-        }
-        GUILayout.EndHorizontal();
-
-        // forward top speed
-        GUILayout.BeginHorizontal(GUILayout.Width(400));
-        {
-            GUILayout.Label("Forward Top Speed: ", labelStyle, GUILayout.Width(200));
-            GUILayout.Label($"{activeSettings.forwardTopSpeed:F2}", labelStyle, GUILayout.Width(100));
-            activeSettings.forwardTopSpeed = GUILayout.HorizontalSlider(activeSettings.forwardTopSpeed, 0f, 100f, GUILayout.Width(200));
-        }
-        GUILayout.EndHorizontal();
-
-        // reverse top speed
-        GUILayout.BeginHorizontal(GUILayout.Width(400));
-        {
-            GUILayout.Label("Reverse Top Speed: ", labelStyle, GUILayout.Width(200));
-            GUILayout.Label($"{activeSettings.reverseTopSpeed:F2}", labelStyle, GUILayout.Width(100));
-            activeSettings.reverseTopSpeed = GUILayout.HorizontalSlider(activeSettings.reverseTopSpeed, 0f, 100f, GUILayout.Width(200));
-        }
-        GUILayout.EndHorizontal();
-
-        float averageWheelAngularVelocity = 0f;
-        float averageWheelRadius = 0f;
-        for (int i = 0; i < drivingWheels.Length; i++)
-        {
-            averageWheelAngularVelocity += drivingWheels[i].wheelAngularVelocity;
-            averageWheelRadius += drivingWheels[i].wheelRadius;
-        }
-
-        averageWheelAngularVelocity /= drivingWheels.Length;
-        averageWheelRadius /= drivingWheels.Length;
-        float wheelSurfaceSpeed = averageWheelAngularVelocity * averageWheelRadius;
-        float carSpeed = Vector3.Dot(carRigidbody.transform.forward, carRigidbody.linearVelocity);
-        float t = 1f - Mathf.Exp(-smoothing * Time.deltaTime);
-        smoothedWheelSpeed = Mathf.Lerp(smoothedWheelSpeed, wheelSurfaceSpeed, t);
-        smoothedCarSpeed = Mathf.Lerp(smoothedCarSpeed, carSpeed, t);
-
-        float centerX = Screen.width * 0.5f;
-        float centerY = Screen.height * 0.5f;
-        Rect carGui = new(Screen.width - 300, Screen.height - 60f, 300f, 60);
-        GUILayout.BeginArea(carGui);
-        CarGUI();
-        GUILayout.EndArea();
-
-        Rect tyresGui = new(centerX + 200, centerY - 200f, 700f, 700f);
-        for (int i = 0; i < steeringWheels.Length; i++)
-        {
-            RaycastSpring steeringWheel = steeringWheels[i];
-            GUILayout.BeginArea(new Rect(tyresGui.x + steeringWheel.transform.localPosition.x * guiScale * 1.4f, tyresGui.y + steeringWheel.transform.localPosition.z * guiScale, tyresGui.width, tyresGui.height));
-            TyreGUI(steeringWheel);
-            GUILayout.EndArea();
-        }
-
-        for (int i = 0; i < drivingWheels.Length; i++)
-        {
-            RaycastSpring drivingWheel = drivingWheels[i];
-            GUILayout.BeginArea(new Rect(tyresGui.x + drivingWheel.transform.localPosition.x * guiScale * 1.4f, tyresGui.y + drivingWheel.transform.localPosition.z * guiScale, tyresGui.width, tyresGui.height));
-            TyreGUI(drivingWheel);
-            GUILayout.EndArea();
-        }
-
-        Rect playerInputArea = new(200f, Screen.height - 100f, 400f, 100f);
-        GUILayout.BeginArea(playerInputArea);
-        PlayerInputGUI();
-        GUILayout.EndArea();
-    }
-
     public void CarGUI()
     {
-        GUILayout.Label($"Wheel Surface Speed: {smoothedWheelSpeed * 3.6f:F1} km/h", labelStyle);
-        GUILayout.Label($"Car Speed: {smoothedCarSpeed * 3.6f:F1} km/h", labelStyle);
+        IMUILayout.Label($"Wheel Surface Speed: {smoothedWheelSpeed * 3.6f:F1} km/h");
+        IMUILayout.Label($"Car Speed: {smoothedCarSpeed * 3.6f:F1} km/h");
     }
 
     public void TyreGUI(RaycastSpring spring)
     {
-        GUILayout.Label($"Lon Slip: {spring.normalizedLongitudinalSlip:F2}", labelStyle);
-        GUILayout.Label($"Lat Slip: {spring.normalizedLateralSlip:F2}", labelStyle);
-        GUILayout.Label($"Sus Distance: {spring.suspensionRestDistance:F2}", labelStyle, GUILayout.Width(100));
-        spring.suspensionRestDistance = GUILayout.HorizontalSlider(spring.suspensionRestDistance, 0.05f, 1f, GUILayout.Width(160));
+        IMUILayout.Label($"Lon Slip: {spring.normalizedLongitudinalSlip:F2}");
+        IMUILayout.Label($"Lat Slip: {spring.normalizedLateralSlip:F2}");
+        IMUILayout.Label($"Sus Distance: {spring.suspensionRestDistance:F2}");
+        IMUILayout.HorizontalSlider(ref spring.suspensionRestDistance, 0.05f, 1f);
     }
 
-    public void PlayerInputGUI()
+    private static void Pedal(float value, float width, float height, Color color, [System.Runtime.CompilerServices.CallerLineNumber] int line = 0)
     {
-        int maxBars = 30;
-        GUILayout.BeginHorizontal(GUILayout.Width(400));
+        float fill = height * Mathf.Clamp01(value);
+        Color trackColor = new(0.12f, 0.12f, 0.12f, 0.65f);
+        using (IMUILayout.BeginVertical(width, key: line))
         {
-            int throttleBars = Mathf.RoundToInt(desiredGasInput * maxBars);
-            GUILayout.Label($"T: {new string('|', throttleBars)}", labelStyle);
-
-            int brakeBars = Mathf.RoundToInt(desiredBreakInput * maxBars);
-            GUILayout.Label($"B: {new string('|', brakeBars)}", labelStyle);
-
-            int handbrakeBars = Mathf.RoundToInt(desiredHandbrakeInput * maxBars);
-            GUILayout.Label($"H: {new string('|', handbrakeBars)}", labelStyle);
+            using (IMUILayout.BeginVertical(width, height, key: line))
+            {
+                IMUILayout.Box(trackColor, width, height - fill, key: line);
+                IMUILayout.Box(color, width, fill, key: line);
+            }
         }
-        GUILayout.EndHorizontal();
-        GUILayout.BeginHorizontal(GUILayout.Width(400));
+    }
+
+    private static void SteerBar(float value, float width, float height, Color color, [System.Runtime.CompilerServices.CallerLineNumber] int line = 0)
+    {
+        float half = width * 0.5f;
+        float clamped = Mathf.Clamp(value, -1f, 1f);
+        float leftFill = clamped < 0f ? -clamped * half : 0f;
+        float rightFill = clamped > 0f ? clamped * half : 0f;
+        float barHeight = 18f;
+        float topPad = (height - barHeight) * 0.5f;
+        Color trackColor = new(0.12f, 0.12f, 0.12f, 0.65f);
+        Color tickColor = new(1f, 1f, 1f, 0.85f);
+        using (IMUILayout.BeginVertical(width, key: line))
         {
-            GUILayout.Label("S: ", labelStyle, GUILayout.Width(30));
-            GUIStyle leftStyle = new GUIStyle(labelStyle) { alignment = TextAnchor.MiddleRight };
-            int steerLeftBars = desiredSteerInput < 0 ? Mathf.RoundToInt(-desiredSteerInput * (maxBars * 0.5f)) : 0;
-            GUILayout.Label(new string('|', steerLeftBars), leftStyle, GUILayout.Width(100));
-            GUILayout.Label("|", labelStyle, GUILayout.Width(10));
-            GUIStyle rightStyle = new GUIStyle(labelStyle) { alignment = TextAnchor.MiddleLeft };
-            int steerRightBars = desiredSteerInput > 0 ? Mathf.RoundToInt(desiredSteerInput * (maxBars * 0.5f)) : 0;
-            GUILayout.Label(new string('|', steerRightBars), rightStyle, GUILayout.Width(100));
+            IMUILayout.Space(topPad, key: line);
+            using (IMUILayout.BeginHorizontal(width, barHeight, key: line))
+            {
+                IMUILayout.Box(trackColor, half - leftFill, barHeight, key: line);
+                IMUILayout.Box(color, leftFill, barHeight, key: line);
+                IMUILayout.Box(tickColor, 2f, barHeight, key: line);
+                IMUILayout.Box(color, rightFill, barHeight, key: line);
+                IMUILayout.Box(trackColor, half - rightFill, barHeight, key: line);
+            }
         }
-
-        GUILayout.EndHorizontal();
     }
 }

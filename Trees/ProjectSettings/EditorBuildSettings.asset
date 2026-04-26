@@ -9,4 +9,5 @@ EditorBuildSettings:
     path: Assets/Scenes/Karts.unity
     guid: b8341cc278dbdda4988a5ea6ec8b1144
   m_configObjects:
-    com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 052faaac586de48259a63d0c4782560b, type: 3}
+    com.unity.input.settings: {fileID: 11400000, guid: c843d68d3158a46428c874d259438f7f, type: 2}
+    com.unity.input.settings.actions: {fileID: -944628639613478452, guid: bf59f5b2580561c40ba560144a8a2cfd, type: 3}

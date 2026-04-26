@@ -6,32 +6,14 @@ using UnityEngine;
 namespace Scripting
 {
     [ExecuteAlways]
-    public abstract class ScriptBehaviour : MonoBehaviour, IContainsInterpreter
+    public class ScriptBehaviour : MonoBehaviour
     {
         [SerializeField]
         private ObjectBinding[] objectBindings = { };
 
-        private readonly Interpreter interpreter = new();
+        public readonly Interpreter interpreter = new();
 
-        Interpreter IContainsInterpreter.Interpreter => interpreter;
-
-        public Value Evaluate(ReadOnlySpan<char> sourceCode)
-        {
-            return interpreter.Evaluate(sourceCode);
-        }
-
-        public Value Evaluate(SourceCode sourceCode)
-        {
-            return interpreter.Evaluate(sourceCode.content);
-        }
-
-        public T Evaluate<T>(SourceCode<T> sourceCode, T defaultValue = default)
-        {
-            Value value = interpreter.Evaluate(sourceCode.content);
-            return value.Deserialize(defaultValue);
-        }
-
-        public void UpdateBindings()
+        public virtual void UpdateBindings()
         {
             interpreter.ClearBindings();
             interpreter.AddBindings(ScriptingLibrary.interpreter);
@@ -40,57 +22,69 @@ namespace Scripting
                 ObjectBinding objectBinding = objectBindings[i];
                 if (objectBinding.target != null)
                 {
-                    System.Type targetType = objectBinding.target.GetType();
-                    interpreter.DeclareBinding(objectBinding.name, () =>
-                    {
-                        MemberInfo memberInfo = objectBinding.GetMember();
-                        if (memberInfo is FieldInfo field)
-                        {
-                            object fieldValue = field.GetValue(objectBinding.target);
-                            return Value.Serialize(fieldValue);
-                        }
-                        else if (memberInfo is PropertyInfo property)
-                        {
-                            object propertyValue = property.GetValue(objectBinding.target);
-                            return Value.Serialize(propertyValue);
-                        }
-                        else if (memberInfo is MethodInfo method)
-                        {
-                            object methodValue = method.Invoke(objectBinding.target, null);
-                            return Value.Serialize(methodValue);
-                        }
-                        else
-                        {
-                            throw new InvalidOperationException($"Unsupported member type '{memberInfo.MemberType}' for member '{objectBinding.member}' on object '{targetType}'");
-                        }
-                    },
-                    (value) =>
-                    {
-                        MemberInfo memberInfo = objectBinding.GetMember();
-                        if (memberInfo is FieldInfo field)
-                        {
-                            object deserializedValue = value.Deserialize(field.FieldType);
-                            field.SetValue(objectBinding.target, deserializedValue);
-                        }
-                        else if (memberInfo is PropertyInfo property)
-                        {
-                            object deserializedValue = value.Deserialize(property.PropertyType);
-                            property.SetValue(objectBinding.target, deserializedValue);
-                        }
-                        else if (memberInfo is MethodInfo method)
-                        {
-                            ParameterInfo[] parameters = method.GetParameters();
-                            System.Type parameterType = parameters[0].ParameterType;
-                            object deserializedValue = value.Deserialize(parameterType);
-                            method.Invoke(objectBinding.target, new object[] { deserializedValue });
-                        }
-                        else
-                        {
-                            throw new InvalidOperationException($"Unsupported member type '{memberInfo.MemberType}' for member '{objectBinding.member}' on object '{targetType}'");
-                        }
-                    });
+                    interpreter.DeclareBinding(objectBinding.name, Read(i), Write(i));
                 }
             }
+        }
+
+        private Action<Value> Write(int i)
+        {
+            return (value) =>
+            {
+                ref ObjectBinding objectBinding = ref objectBindings[i];
+                MemberInfo memberInfo = objectBinding.GetMember();
+                if (memberInfo is FieldInfo field)
+                {
+                    object deserializedValue = value.Deserialize(field.FieldType);
+                    field.SetValue(objectBinding.target, deserializedValue);
+                }
+                else if (memberInfo is PropertyInfo property)
+                {
+                    object deserializedValue = value.Deserialize(property.PropertyType);
+                    property.SetValue(objectBinding.target, deserializedValue);
+                }
+                else if (memberInfo is MethodInfo method)
+                {
+                    ParameterInfo[] parameters = method.GetParameters();
+                    Type parameterType = parameters[0].ParameterType;
+                    object deserializedValue = value.Deserialize(parameterType);
+                    method.Invoke(objectBinding.target, new object[] { deserializedValue });
+                }
+                else
+                {
+                    Type targetType = objectBinding.target.GetType();
+                    throw new InvalidOperationException($"Unsupported member type '{memberInfo.MemberType}' for member '{objectBinding.member}' on object '{targetType}'");
+                }
+            };
+        }
+
+        private Func<Value> Read(int i)
+        {
+            return () =>
+            {
+                ref ObjectBinding objectBinding = ref objectBindings[i];
+                MemberInfo memberInfo = objectBinding.GetMember();
+                if (memberInfo is FieldInfo field)
+                {
+                    object fieldValue = field.GetValue(objectBinding.target);
+                    return Value.Serialize(fieldValue);
+                }
+                else if (memberInfo is PropertyInfo property)
+                {
+                    object propertyValue = property.GetValue(objectBinding.target);
+                    return Value.Serialize(propertyValue);
+                }
+                else if (memberInfo is MethodInfo method)
+                {
+                    object methodValue = method.Invoke(objectBinding.target, null);
+                    return Value.Serialize(methodValue);
+                }
+                else
+                {
+                    Type targetType = objectBinding.target.GetType();
+                    throw new InvalidOperationException($"Unsupported member type '{memberInfo.MemberType}' for member '{objectBinding.member}' on object '{targetType}'");
+                }
+            };
         }
 
         [Serializable]
@@ -106,7 +100,7 @@ namespace Scripting
             {
                 if (target != null)
                 {
-                    System.Type targetType = target.GetType();
+                    Type targetType = target.GetType();
                     FieldInfo field = targetType.GetField(member, Flags);
                     if (field != null)
                     {

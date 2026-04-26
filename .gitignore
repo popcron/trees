@@ -9,6 +9,10 @@ Trees/Assets/Generated Code.meta
 Trees/*.csproj
 Trees/*.slnx
 
+# dotnet
+**/obj/*
+**/bin/*
+
 # Blender
 *.blend1
 *.blend1.meta

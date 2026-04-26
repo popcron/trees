@@ -34,7 +34,6 @@ namespace Scripting
                     stringBuilder.Append('\n');
                 }
 
-                stringBuilder.Append('\n');
                 depth--;
                 stringBuilder.Append(new string(' ', depth * 4));
             }

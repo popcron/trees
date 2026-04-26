@@ -5,7 +5,7 @@ namespace Scripting
 {
     public class Return : Statement
     {
-        public readonly Expression value;
+        public Expression value;
 
         public override int ChildCount => value == null ? 0 : 1;
 

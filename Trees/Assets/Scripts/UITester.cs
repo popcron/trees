@@ -6,7 +6,7 @@ using UnityEngine.UIElements;
 [ExecuteAlways]
 public class UITester : MonoBehaviour
 {
-    public Color backgroundColor = Color.forestGreen;
+    public Color backgroundColor = Color.red;
     public Color fontColor = Color.white;
     public AnimationCurve fontSize = AnimationCurve.Linear(0f, 24f, 1f, 24f);
     public float animationSpeed = 1f;
@@ -20,17 +20,10 @@ public class UITester : MonoBehaviour
         panelSettings = ScriptableObject.CreateInstance<PanelSettings>();
         panelSettings.targetTexture = new RenderTexture(Screen.width, Screen.height, 24, RenderTextureFormat.ARGB32);
         panelSettings.targetTexture.Create();
-
-        ThanksUnity.Create(panelSettings);
-        panel = ThanksUnity.GetPanel(panelSettings);
-        ThanksUnity.SetTargetTexture(panel, panelSettings.targetTexture);
-        ThanksUnity.ApplyPanelSettings(panelSettings);
-
-        if (themeStyleSheet != null)
-        {
-            panel.visualTree.styleSheets.Add(themeStyleSheet);
-        }
-
+        ThanksUnity.Create(panelSettings);                                      // panelSettings.Create()
+        panel = ThanksUnity.GetPanel(panelSettings);                            // panelSettings.panel
+        ThanksUnity.SetTargetTexture(panel, panelSettings.targetTexture);       // panel.targetTexture = panelSettings.targetTexture
+        panelSettings.themeStyleSheet = themeStyleSheet;                        // also calls panelSettings.ApplyThemeStyleSheet(), so even if null this is needed
         gui = CreateGUI();
         panel.visualTree.Add(gui);
         panel.visualTree.MarkDirtyRepaint();
@@ -80,6 +73,11 @@ public class UITester : MonoBehaviour
         label.style.color = fontColor;
         label.style.unityTextAlign = TextAnchor.MiddleCenter;
         label.style.flexGrow = 1;
+
+        // panel settings needs a font set and thats too much just for this example
+        Font builtinFont = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+        label.style.unityFontDefinition = FontDefinition.FromFont(builtinFont);
+
         root.Add(label);
         return root;
     }
@@ -108,7 +106,6 @@ public class UITester : MonoBehaviour
             panelSettings.targetTexture = new RenderTexture(Screen.width, Screen.height, 24, RenderTextureFormat.ARGB32);
             panelSettings.targetTexture.Create();
             ThanksUnity.SetTargetTexture(panel, panelSettings.targetTexture);
-            ThanksUnity.ApplyPanelSettings(panelSettings);
         }
     }
 
@@ -138,7 +135,6 @@ public class UITester : MonoBehaviour
         private static readonly PropertyInfo panelProperty = panelSettingsType.GetProperty("panel", Instance);
         private static readonly Type baseRuntimePanelType = runtimePanelType.BaseType;
         private static readonly FieldInfo targetTextureField = baseRuntimePanelType.GetField("targetTexture", Instance);
-        private static readonly MethodInfo applyPanelSettings = panelSettingsType.GetMethod("ApplyPanelSettings", Instance);
         private static readonly MethodInfo disposePanel = panelSettingsType.GetMethod("DisposePanel", Instance);
 
         public static void Create(PanelSettings panelSettings)
@@ -154,11 +150,6 @@ public class UITester : MonoBehaviour
         public static void SetTargetTexture(IPanel panel, RenderTexture targetTexture)
         {
             targetTextureField.SetValue(panel, targetTexture);
-        }
-
-        public static void ApplyPanelSettings(PanelSettings panelSettings)
-        {
-            applyPanelSettings.Invoke(panelSettings, null);
         }
 
         public static void DisposePanel(PanelSettings panelSettings)

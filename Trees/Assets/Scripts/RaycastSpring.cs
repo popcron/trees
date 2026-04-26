@@ -9,9 +9,9 @@ public class RaycastSpring : MonoBehaviour
     public float gasInput = 0f;
     public float brakeInput = 0f;
     public float handbrakeInput = 0f;
-    public float suspensionRestDistance = 5f;
-    public float wheelRadius = 0.4f;
-    public float wheelAngularVelocity;
+    public float suspensionRestDistance = 5f;               
+    public float wheelRadius = 0.4f;                        
+    public float wheelAngularVelocity;                      
     public float wheelRollAngle;
     public float normalizedLongitudinalSlip;
     public float normalizedLateralSlip;
@@ -21,7 +21,19 @@ public class RaycastSpring : MonoBehaviour
     public Vector3 currentSpringDirection;
     public Vector3 currentSpringOrigin;
 
+    private float tyreVisualYaw;
+    private bool tyreVisualYawCached;
+
     private float WheelInertia => 0.5f * settings.tyreMass * wheelRadius * wheelRadius;
+
+    private void Awake()
+    {
+        if (tyreVisual != null)
+        {
+            tyreVisualYaw = tyreVisual.localEulerAngles.y;
+            tyreVisualYawCached = true;
+        }
+    }
 
     private void FixedUpdate()
     {
@@ -30,16 +42,22 @@ public class RaycastSpring : MonoBehaviour
 
     private void LateUpdate()
     {
-        UpdateTireVisual();
+        UpdateTyreVisual();
     }
 
-    public void UpdateTireVisual()
+    public void UpdateTyreVisual()
     {
         Ray ray = GetRay();
         float distance = TryGetGround(out RaycastHit ground, out _) ? ground.distance : suspensionRestDistance;
         tyreVisual.position = ray.origin + ray.direction * (distance - wheelRadius);
         wheelRollAngle = Mathf.Repeat(wheelRollAngle + wheelAngularVelocity * Mathf.Rad2Deg * Time.deltaTime, 360f);
-        tyreVisual.rotation = transform.rotation * Quaternion.Euler(wheelRollAngle, 0f, 0f);
+        if (!tyreVisualYawCached)
+        {
+            tyreVisualYaw = tyreVisual.localEulerAngles.y;
+            tyreVisualYawCached = true;
+        }
+
+        tyreVisual.localRotation = Quaternion.AngleAxis((wheelRollAngle + 90f) % 360f, Vector3.right) * Quaternion.AngleAxis(tyreVisualYaw, Vector3.up);
     }
 
     public Ray GetRay()
@@ -150,8 +168,9 @@ public class RaycastSpring : MonoBehaviour
         float forwardRedline = settings.forwardTopSpeed * 1.2f / wheelRadius;
         float reverseRedline = settings.reverseTopSpeed * 1.2f / wheelRadius;
         wheelAngularVelocity = Mathf.Clamp(wheelAngularVelocity, -reverseRedline, forwardRedline);
-
-        transform.localRotation = Quaternion.Euler(0f, steeringAngle, 0f);
+        Vector3 localEuler = transform.localEulerAngles;
+        localEuler.y = steeringAngle;
+        transform.localEulerAngles = localEuler;
     }
 
     private void OnDrawGizmosSelected()
@@ -207,7 +226,6 @@ public class RaycastSpring : MonoBehaviour
 
     private bool OnlyNonChildren(RaycastHit hit)
     {
-        return !hit.collider.transform.IsChildOf(carRigidbody.transform)
-            && hit.normal.y > 0.3f;
+        return !hit.collider.transform.IsChildOf(carRigidbody.transform) && hit.normal.y > 0.3f;
     }
 }

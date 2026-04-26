@@ -2,14 +2,19 @@
 {
     public enum BinaryOperator
     {
-        Add = 1,
-        Subtract = 2,
-        Multiply = 3,
-        Divide = 4,
-        Modulus = 5,
-        Equal = 6,
-        NotEqual = 7,
-        And = 8,
-        Or = 9,
+        Uninitialized = 0,
+        Add,
+        Subtract,
+        Multiply,
+        Divide,
+        Modulus,
+        Equal,
+        NotEqual,
+        And,
+        Or,
+        Greater,
+        Less,
+        GreaterEqual,
+        LessEqual,
     }
 }

@@ -5,7 +5,7 @@ namespace Scripting
 {
     public class Unary : Expression
     {
-        public readonly Expression operand;
+        public Expression operand;
         public readonly UnaryOperator op;
 
         public override int ChildCount => 1;

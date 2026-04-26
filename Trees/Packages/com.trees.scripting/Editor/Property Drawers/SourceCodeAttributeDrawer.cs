@@ -1,12 +1,13 @@
-﻿using UnityEditor.UIElements;
+﻿using UnityEditor;
+using UnityEditor.UIElements;
 using UnityEngine.UIElements;
 
 namespace Scripting
 {
-    [UnityEditor.CustomPropertyDrawer(typeof(SourceCodeAttribute))]
-    public class SourceCodeAttributeDrawer : UnityEditor.PropertyDrawer
+    [CustomPropertyDrawer(typeof(SourceCodeAttribute))]
+    public class SourceCodeAttributeDrawer : PropertyDrawer
     {
-        public override VisualElement CreatePropertyGUI(UnityEditor.SerializedProperty property)
+        public override VisualElement CreatePropertyGUI(SerializedProperty property)
         {
             VisualElement container = new();
             Interpreter interpreter = EditorConstants.GetInterpreter(property);

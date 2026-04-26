@@ -15,27 +15,33 @@ namespace Scripting
         public readonly Type type;
 
         [FieldOffset(4)]
-        internal bool boolValue;
+        public bool boolValue;
 
         [FieldOffset(4)]
-        internal char characterValue;
+        public char characterValue;
+
+        [FieldOffset(4)]
+        public double doubleValue;
+
+        [FieldOffset(4)]
+        public long longValue;
 
         [FieldOffset(16)]
-        internal string stringValue;
-
-        [FieldOffset(4)]
-        internal double doubleValue;
-
-        [FieldOffset(4)]
-        internal long longValue;
+        public string stringValue;
 
         [FieldOffset(16)]
-        internal ObjectInstance objectValue;
+        public ObjectInstance objectValue;
 
-        public readonly bool IsNull => type == Type.Object && objectValue == null;
-        public readonly ObjectInstance Object => objectValue;
+        [FieldOffset(16)]
+        public FunctionValue functionValue;
 
-        internal Value(Type type)
+        [FieldOffset(16)]
+        public TypeValue typeValue;
+
+        [FieldOffset(16)]
+        public Func<Value[], Value> nativeFunctionValue;
+
+        public Value(Type type)
         {
             this.type = type;
             boolValue = default;
@@ -43,65 +49,83 @@ namespace Scripting
             stringValue = default;
             doubleValue = default;
             longValue = default;
+            functionValue = default;
+            typeValue = default;
             objectValue = default;
+            nativeFunctionValue = default;
         }
 
-        internal Value(bool value)
+        public Value(bool value)
         {
             this.type = Type.Boolean;
             characterValue = default;
             stringValue = default;
             doubleValue = default;
             longValue = default;
+            functionValue = default;
+            typeValue = default;
             objectValue = default;
+            nativeFunctionValue = default;
             boolValue = value;
         }
 
-        internal Value(char value)
+        public Value(char value)
         {
             this.type = Type.Character;
             boolValue = default;
             stringValue = default;
             doubleValue = default;
             longValue = default;
+            functionValue = default;
+            typeValue = default;
             objectValue = default;
+            nativeFunctionValue = default;
             characterValue = value;
         }
 
-        internal Value(string value)
+        public Value(string value)
         {
             this.type = Type.String;
             boolValue = default;
             characterValue = default;
             doubleValue = default;
             longValue = default;
+            functionValue = default;
+            typeValue = default;
             objectValue = default;
+            nativeFunctionValue = default;
             stringValue = value;
         }
 
-        internal Value(double value)
+        public Value(double value)
         {
-            this.type = Type.Double;
+            this.type = Type.Float;
             boolValue = default;
             characterValue = default;
             stringValue = default;
             longValue = default;
+            functionValue = default;
+            typeValue = default;
             objectValue = default;
+            nativeFunctionValue = default;
             doubleValue = value;
         }
 
-        internal Value(long value)
+        public Value(long value)
         {
-            this.type = Type.Long;
+            this.type = Type.Integer;
             boolValue = default;
             characterValue = default;
             stringValue = default;
             doubleValue = default;
+            functionValue = default;
+            typeValue = default;
             objectValue = default;
+            nativeFunctionValue = default;
             longValue = value;
         }
 
-        internal Value(ObjectInstance value)
+        public Value(ObjectInstance value)
         {
             this.type = Type.Object;
             boolValue = default;
@@ -109,7 +133,52 @@ namespace Scripting
             stringValue = default;
             doubleValue = default;
             longValue = default;
+            functionValue = default;
+            typeValue = default;
+            nativeFunctionValue = default;
             objectValue = value;
+        }
+
+        public Value(TypeValue value)
+        {
+            this.type = Type.Type;
+            boolValue = default;
+            characterValue = default;
+            stringValue = default;
+            doubleValue = default;
+            longValue = default;
+            objectValue = default;
+            functionValue = default;
+            nativeFunctionValue = default;
+            typeValue = value;
+        }
+
+        public Value(FunctionValue value)
+        {
+            this.type = Type.Function;
+            boolValue = default;
+            characterValue = default;
+            stringValue = default;
+            doubleValue = default;
+            longValue = default;
+            objectValue = default;
+            typeValue = default;
+            nativeFunctionValue = default;
+            functionValue = value;
+        }
+
+        public Value(Func<Value[], Value> value)
+        {
+            this.type = Type.NativeFunction;
+            boolValue = default;
+            characterValue = default;
+            stringValue = default;
+            doubleValue = default;
+            longValue = default;
+            objectValue = default;
+            typeValue = default;
+            functionValue = default;
+            nativeFunctionValue = value;
         }
 
         public readonly void ThrowIfNot(Type expectedType)
@@ -127,42 +196,51 @@ namespace Scripting
             return StringBuilderPool.ToStringAndReturn(stringBuilder);
         }
 
-        public readonly void Append(StringBuilder stringBuilder)
+        public readonly void Append(StringBuilder stringBuilder, int depth = 0)
         {
-            if (type == default)
+            switch (type)
             {
-                stringBuilder.Append("default");
-            }
-            else if (type == Type.Boolean)
-            {
-                stringBuilder.Append(boolValue ? KeywordMap.True : KeywordMap.False);
-            }
-            else if (type == Type.Character)
-            {
-                stringBuilder.Append(characterValue);
-            }
-            else if (type == Type.String)
-            {
-                stringBuilder.Append(stringValue);
-            }
-            else if (type == Type.Double)
-            {
-                stringBuilder.Append(doubleValue);
-            }
-            else if (type == Type.Long)
-            {
-                stringBuilder.Append(longValue);
-            }
-            else if (type == Type.Object)
-            {
-                if (objectValue != null)
-                {
-                    stringBuilder.Append(objectValue.ToString());
-                }
-            }
-            else
-            {
-                stringBuilder.Append(base.ToString());
+                case Type.Boolean:
+                    stringBuilder.Append(boolValue ? KeywordMap.True : KeywordMap.False);
+                    break;
+                case Type.Character:
+                    stringBuilder.Append(characterValue);
+                    break;
+                case Type.String:
+                    stringBuilder.Append(stringValue);
+                    break;
+                case Type.Float:
+                    stringBuilder.Append(doubleValue);
+                    break;
+                case Type.Integer:
+                    stringBuilder.Append(longValue);
+                    break;
+                case Type.Object:
+                    if (objectValue != null)
+                    {
+                        objectValue.Append(stringBuilder, depth);
+                    }
+                    else
+                    {
+                        stringBuilder.Append(KeywordMap.Null);
+                    }
+                    break;
+                case Type.Function:
+                    stringBuilder.Append(KeywordMap.FunctionDeclaration);
+                    stringBuilder.Append(' ');
+                    stringBuilder.Append(functionValue.symbol.name);
+                    break;
+                case Type.Type:
+                    stringBuilder.Append(KeywordMap.TypeDeclaration);
+                    stringBuilder.Append(' ');
+                    stringBuilder.Append(typeValue.symbol.name);
+                    break;
+                case Type.NativeFunction:
+                    stringBuilder.Append(nativeFunctionValue.ToString());
+                    break;
+                default:
+                    stringBuilder.Append(base.ToString());
+                    break;
             }
         }
 
@@ -178,83 +256,79 @@ namespace Scripting
                 return false;
             }
 
-            if (type == Type.Boolean)
+            switch (type)
             {
-                return boolValue == other.boolValue;
-            }
-            else if (type == Type.Character)
-            {
-                return characterValue == other.characterValue;
-            }
-            else if (type == Type.String)
-            {
-                return stringValue == other.stringValue;
-            }
-            else if (type == Type.Double)
-            {
-                return doubleValue == other.doubleValue;
-            }
-            else if (type == Type.Long)
-            {
-                return longValue == other.longValue;
-            }
-            else if (type == Type.Object)
-            {
-                if (objectValue != null && other.objectValue != null)
-                {
-                    return objectValue.Equals(other.objectValue);
-                }
-                else if (objectValue == null && other.objectValue == null)
-                {
+                case Type.Boolean:
+                    return boolValue == other.boolValue;
+                case Type.Character:
+                    return characterValue == other.characterValue;
+                case Type.String:
+                    return stringValue == other.stringValue;
+                case Type.Float:
+                    return doubleValue == other.doubleValue;
+                case Type.Integer:
+                    return longValue == other.longValue;
+                case Type.Object:
+                    if (objectValue != null && other.objectValue != null)
+                    {
+                        return objectValue.Equals(other.objectValue);
+                    }
+                    else if (objectValue == null && other.objectValue == null)
+                    {
+                        return true;
+                    }
+                    else
+                    {
+                        return false;
+                    }
+
+                case Type.Function:
+                    return ReferenceEquals(functionValue, other.functionValue);
+                case Type.Type:
+                    return ReferenceEquals(typeValue, other.typeValue);
+                case Type.NativeFunction:
+                    return ReferenceEquals(nativeFunctionValue, other.nativeFunctionValue);
+                default:
                     return true;
-                }
-                else
-                {
-                    return false;
-                }
-            }
-            else
-            {
-                return true;
             }
         }
 
         public readonly override int GetHashCode()
         {
-            if (type == Type.Boolean)
+            return type switch
             {
-                return boolValue.GetHashCode();
-            }
-            else if (type == Type.Character)
-            {
-                return characterValue.GetHashCode();
-            }
-            else if (type == Type.String)
-            {
-                return stringValue != null ? stringValue.GetHashCode() : 0;
-            }
-            else if (type == Type.Double)
-            {
-                return doubleValue.GetHashCode();
-            }
-            else if (type == Type.Long)
-            {
-                return longValue.GetHashCode();
-            }
-            else if (type == Type.Object)
-            {
-                return objectValue.GetHashCode();
-            }
-            else
-            {
-                return 0;
-            }
+                Type.Boolean => boolValue.GetHashCode(),
+                Type.Character => characterValue.GetHashCode(),
+                Type.String => stringValue != null ? stringValue.GetHashCode() : 0,
+                Type.Float => doubleValue.GetHashCode(),
+                Type.Integer => longValue.GetHashCode(),
+                Type.Object => objectValue != null ? objectValue.GetHashCode() : 0,
+                Type.Function => functionValue != null ? functionValue.GetHashCode() : 0,
+                Type.Type => typeValue != null ? typeValue.GetHashCode() : 0,
+                Type.NativeFunction => nativeFunctionValue != null ? nativeFunctionValue.GetHashCode() : 0,
+                _ => 0
+            };
         }
 
         public readonly bool TryDeserialize<T>(out T result)
         {
-            if (ScriptingLibrary.TryDeserialize(this, out result))
+            try
             {
+                result = ScriptingLibrary.Deserialize<T>(this);
+                return true;
+            }
+            catch
+            {
+                result = default;
+                return false;
+            }
+        }
+
+        public readonly bool TryDeserialize(out ReadOnlySpan<char> result)
+        {
+            if (type == Type.String)
+            {
+                result = stringValue.AsSpan();
                 return true;
             }
             else
@@ -264,35 +338,28 @@ namespace Scripting
             }
         }
 
-        public readonly T Deserialize<T>(T defaultValue = default)
+        public readonly T Deserialize<T>()
         {
-            if (ScriptingLibrary.TryDeserialize(this, out T result))
+            return ScriptingLibrary.Deserialize<T>(this);
+        }
+
+        public readonly object Deserialize(System.Type targetType, object defaultValue = null)
+        {
+            try
             {
-                return result;
+                return ScriptingLibrary.Deserialize(targetType, this);
             }
-            else
+            catch
             {
                 return defaultValue;
             }
         }
 
-        public readonly object Deserialize(System.Type targetType)
+        public readonly ReadOnlySpan<char> Deserialize(ReadOnlySpan<char> defaultValue = default)
         {
-            if (ScriptingLibrary.TryDeserialize(targetType, this, out object result))
+            if (type == Type.String)
             {
-                return result;
-            }
-            else
-            {
-                return null;
-            }
-        }
-
-        public readonly object Deserialize(System.Type targetType, object defaultValue = null)
-        {
-            if (ScriptingLibrary.TryDeserialize(targetType, this, out object result))
-            {
-                return result;
+                return stringValue.AsSpan();
             }
             else
             {
@@ -302,13 +369,14 @@ namespace Scripting
 
         public readonly bool TryDeserialize(System.Type targetType, out object result)
         {
-            if (ScriptingLibrary.TryDeserialize(targetType, this, out result))
+            try
             {
+                result = ScriptingLibrary.Deserialize(targetType, this);
                 return true;
             }
-            else
+            catch
             {
-                result = null;
+                result = default;
                 return false;
             }
         }
@@ -321,6 +389,76 @@ namespace Scripting
         public static Value Serialize<T>(T value)
         {
             return ScriptingLibrary.Serialize(value);
+        }
+
+        public static Value Serialize(bool value)
+        {
+            return new(value);
+        }
+
+        public static Value Serialize(char value)
+        {
+            return new(value);
+        }
+
+        public static Value Serialize(byte value)
+        {
+            return new(value);
+        }
+
+        public static Value Serialize(sbyte value)
+        {
+            return new(value);
+        }
+
+        public static Value Serialize(short value)
+        {
+            return new(value);
+        }
+
+        public static Value Serialize(ushort value)
+        {
+            return new(value);
+        }
+
+        public static Value Serialize(int value)
+        {
+            return new(value);
+        }
+
+        public static Value Serialize(uint value)
+        {
+            return new(value);
+        }
+
+        public static Value Serialize(long value)
+        {
+            return new(value);
+        }
+
+        public static Value Serialize(ulong value)
+        {
+            return new((long)value);
+        }
+
+        public static Value Serialize(float value)
+        {
+            return new(value);
+        }
+
+        public static Value Serialize(double value)
+        {
+            return new(value);
+        }
+
+        public static Value Serialize(ReadOnlySpan<char> value)
+        {
+            return new(value.ToString());
+        }
+
+        public static Value Serialize(string value)
+        {
+            return new(value);
         }
 
         public static Value Serialize(object value)
@@ -340,12 +478,16 @@ namespace Scripting
 
         public enum Type
         {
-            Boolean = 1,
-            Character = 2,
-            String = 3,
-            Double = 4,
-            Long = 5,
-            Object = 6
+            Uninitialized = 0,
+            Boolean,
+            Character,
+            String,
+            Float,
+            Integer,
+            Object,
+            Function,
+            Type,
+            NativeFunction
         }
     }
 }

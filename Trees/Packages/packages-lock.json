@@ -7,17 +7,34 @@
       "dependencies": {},
       "hash": "19fac6a6126a9c25d8f226b38bb12c7360557ff6"
     },
-    "com.popcron.generated-type-registries": {
-      "version": "https://github.com/popcron/generated-type-registries.git",
+    "com.trees.goap": {
+      "version": "file:com.trees.goap",
       "depth": 0,
-      "source": "git",
-      "dependencies": {},
-      "hash": "1e5037531da8e0933947aff3d15dfb6a28298d7b"
+      "source": "embedded",
+      "dependencies": {}
     },
     "com.trees.scripting": {
       "version": "file:com.trees.scripting",
       "depth": 0,
       "source": "embedded",
+      "dependencies": {}
+    },
+    "com.trees.type-dropdown": {
+      "version": "file:com.trees.type-dropdown",
+      "depth": 0,
+      "source": "embedded",
+      "dependencies": {}
+    },
+    "com.trees.ui": {
+      "version": "file:com.trees.ui",
+      "depth": 0,
+      "source": "embedded",
+      "dependencies": {}
+    },
+    "com.unity.2d.sprite": {
+      "version": "1.0.0",
+      "depth": 0,
+      "source": "builtin",
       "dependencies": {}
     },
     "com.unity.ai.navigation": {
@@ -46,13 +63,6 @@
       "dependencies": {
         "com.unity.test-framework": "1.1.31"
       },
-      "url": "https://packages.unity.com"
-    },
-    "com.unity.collab-proxy": {
-      "version": "2.12.4",
-      "depth": 0,
-      "source": "registry",
-      "dependencies": {},
       "url": "https://packages.unity.com"
     },
     "com.unity.collections": {
@@ -158,7 +168,7 @@
     },
     "com.unity.test-framework": {
       "version": "1.7.1",
-      "depth": 0,
+      "depth": 1,
       "source": "builtin",
       "dependencies": {
         "com.unity.ext.nunit": "2.1.0",
@@ -176,18 +186,6 @@
       },
       "url": "https://packages.unity.com"
     },
-    "com.unity.ugui": {
-      "version": "2.5.0",
-      "depth": 0,
-      "source": "builtin",
-      "dependencies": {
-        "com.unity.modules.ui": "1.0.0",
-        "com.unity.modules.imgui": "1.0.0",
-        "com.unity.modules.audio": "1.0.0",
-        "com.unity.modules.physics2d": "1.0.0",
-        "com.unity.modules.physics": "1.0.0"
-      }
-    },
     "com.unity.visualeffectgraph": {
       "version": "17.6.0",
       "depth": 0,
@@ -197,33 +195,11 @@
         "com.unity.render-pipelines.core": "17.6.0"
       }
     },
-    "com.unity.modules.accessibility": {
-      "version": "1.0.0",
-      "depth": 0,
-      "source": "builtin",
-      "dependencies": {}
-    },
-    "com.unity.modules.adaptiveperformance": {
-      "version": "1.0.0",
-      "depth": 0,
-      "source": "builtin",
-      "dependencies": {
-        "com.unity.modules.subsystems": "1.0.0"
-      }
-    },
     "com.unity.modules.ai": {
       "version": "1.0.0",
       "depth": 0,
       "source": "builtin",
       "dependencies": {}
-    },
-    "com.unity.modules.androidjni": {
-      "version": "1.0.0",
-      "depth": 0,
-      "source": "builtin",
-      "dependencies": {
-        "com.unity.modules.jsonserialize": "1.0.0"
-      }
     },
     "com.unity.modules.animation": {
       "version": "1.0.0",
@@ -242,14 +218,6 @@
       "depth": 0,
       "source": "builtin",
       "dependencies": {}
-    },
-    "com.unity.modules.cloth": {
-      "version": "1.0.0",
-      "depth": 0,
-      "source": "builtin",
-      "dependencies": {
-        "com.unity.modules.physics": "1.0.0"
-      }
     },
     "com.unity.modules.director": {
       "version": "1.0.0",
@@ -382,15 +350,6 @@
       "source": "builtin",
       "dependencies": {}
     },
-    "com.unity.modules.unityanalytics": {
-      "version": "1.0.0",
-      "depth": 0,
-      "source": "builtin",
-      "dependencies": {
-        "com.unity.modules.unitywebrequest": "1.0.0",
-        "com.unity.modules.jsonserialize": "1.0.0"
-      }
-    },
     "com.unity.modules.unitywebrequest": {
       "version": "1.0.0",
       "depth": 0,
@@ -446,30 +405,6 @@
         "com.unity.modules.imageconversion": "1.0.0",
         "com.unity.modules.imgui": "1.0.0"
       }
-    },
-    "com.unity.modules.vehicles": {
-      "version": "1.0.0",
-      "depth": 0,
-      "source": "builtin",
-      "dependencies": {
-        "com.unity.modules.physics": "1.0.0"
-      }
-    },
-    "com.unity.modules.video": {
-      "version": "1.0.0",
-      "depth": 0,
-      "source": "builtin",
-      "dependencies": {
-        "com.unity.modules.audio": "1.0.0",
-        "com.unity.modules.ui": "1.0.0",
-        "com.unity.modules.unitywebrequest": "1.0.0"
-      }
-    },
-    "com.unity.modules.wind": {
-      "version": "1.0.0",
-      "depth": 0,
-      "source": "builtin",
-      "dependencies": {}
     },
     "com.unity.modules.xr": {
       "version": "1.0.0",

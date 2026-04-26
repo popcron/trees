@@ -1,0 +1,18 @@
+{
+    "name": "TypeDropdown.Editor",
+    "rootNamespace": "",
+    "references": [
+        "GUID:fe710a522aec01f4ebc09910b8991d31"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

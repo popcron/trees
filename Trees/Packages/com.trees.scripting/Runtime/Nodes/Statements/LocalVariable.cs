@@ -6,13 +6,16 @@ namespace Scripting
     public class LocalVariable : Statement
     {
         public readonly string name;
-        public readonly Expression initializer;
+        public readonly int nameIndex;
+        public Expression initializer;
+        public int slotIndex;
 
         public override int ChildCount => initializer == null ? 0 : 1;
 
         public LocalVariable(string name, Expression initializer, Range range, Module file) : base(range, file)
         {
             this.name = name;
+            nameIndex = file.readOnly.Add(name);
             this.initializer = initializer;
         }
 

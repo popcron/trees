@@ -1,19 +1,19 @@
-﻿using System;
+using System;
 
 namespace Scripting
 {
     public readonly struct Keyword : IEquatable<Keyword>
     {
-        public readonly ulong hash;
+        public readonly int id;
 
-        public Keyword(ulong hash)
+        public Keyword(int id)
         {
-            this.hash = hash;
+            this.id = id;
         }
 
         public override string ToString()
         {
-            return hash.ToString();
+            return id.ToString();
         }
 
         public readonly override bool Equals(object obj)
@@ -23,12 +23,12 @@ namespace Scripting
 
         public readonly bool Equals(Keyword other)
         {
-            return hash == other.hash;
+            return id == other.id;
         }
 
         public readonly override int GetHashCode()
         {
-            return hash.GetHashCode();
+            return id.GetHashCode();
         }
 
         public static bool operator ==(Keyword left, Keyword right)

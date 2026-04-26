@@ -5,46 +5,131 @@ namespace Scripting
 {
     public class Interpreter
     {
-        private readonly Dictionary<ulong, TypeSymbol> types = new();
-        private readonly Dictionary<ulong, Value> variables = new();
-        private readonly Dictionary<ulong, Binding> bindings = new();
+        private readonly ReadOnly readOnly = new();
+        private readonly List<int> bindingIndices = new();
+        private readonly List<Binding> bindings = new();
+        private readonly int selfIndex;
+        private Scope rootScope = new(null);
+        private Module currentModule;
 
-        public IReadOnlyCollection<Binding> Bindings => bindings.Values;
+        public ReadOnly ReadOnly => readOnly;
+        public IReadOnlyList<Binding> Bindings => bindings;
+        public int SelfIndex => selfIndex;
+
+        public bool TryGetBindingIndexByName(int nameIndex, out int index)
+        {
+            return TryGetBindingIndexByNameIndex(nameIndex, out index);
+        }
+
+        public Interpreter()
+        {
+            selfIndex = readOnly.Add(KeywordMap.Self);
+        }
+
+        public bool TryGetBindingIndex(ReadOnlySpan<char> name, out int index)
+        {
+            if (!readOnly.TryGetIndex(name, out int nameIndex))
+            {
+                index = -1;
+                return false;
+            }
+
+            return TryGetBindingIndexByNameIndex(nameIndex, out index);
+        }
+
+        private bool TryGetBindingIndexByNameIndex(int nameIndex, out int index)
+        {
+            for (int i = 0; i < bindingIndices.Count; i++)
+            {
+                if (bindingIndices[i] == nameIndex)
+                {
+                    index = i;
+                    return true;
+                }
+            }
+
+            index = -1;
+            return false;
+        }
+
+        public Binding GetBinding(int index)
+        {
+            return bindings[index];
+        }
 
         public bool ContainsVariable(ReadOnlySpan<char> name)
         {
-            ulong hash = ScriptingLibrary.GetHash(name);
-            return variables.ContainsKey(hash);
+            if (currentModule == null)
+            {
+                return false;
+            }
+
+            if (!readOnly.TryGetIndex(name, out int nameIndex))
+            {
+                return false;
+            }
+
+            return currentModule.localSlots.ContainsKey(nameIndex);
         }
 
         public bool ContainsBinding(ReadOnlySpan<char> name)
         {
-            ulong hash = ScriptingLibrary.GetHash(name);
-            return bindings.ContainsKey(hash);
+            return TryGetBindingIndex(name, out _);
+        }
+
+        public bool ContainsFunctionVariable(ReadOnlySpan<char> name)
+        {
+            if (currentModule == null)
+            {
+                return false;
+            }
+
+            if (!readOnly.TryGetIndex(name, out int nameIndex))
+            {
+                return false;
+            }
+
+            return currentModule.functionNameIndices.Contains(nameIndex);
+        }
+
+        public bool ContainsFunctionBinding(ReadOnlySpan<char> name)
+        {
+            if (!TryGetBindingIndex(name, out int index))
+            {
+                return false;
+            }
+
+            return bindings[index].read().type == Value.Type.NativeFunction;
         }
 
         public void AddBindings(Interpreter other)
         {
             foreach (Binding binding in other.Bindings)
             {
-                ulong hash = ScriptingLibrary.GetHash(binding.name);
-                if (!bindings.ContainsKey(hash))
+                int nameIndex = readOnly.Add(binding.name);
+                if (!TryGetBindingIndexByNameIndex(nameIndex, out _))
                 {
-                    bindings.Add(hash, binding);
+                    RegisterBinding(nameIndex, binding);
                 }
             }
         }
 
+        private void RegisterBinding(int nameIndex, Binding binding)
+        {
+            bindingIndices.Add(nameIndex);
+            bindings.Add(binding);
+        }
+
         public Keyword DeclareBinding<T>(ReadOnlySpan<char> name, Func<T> read, Action<T> write)
         {
-            ulong hash = ScriptingLibrary.GetHash(name);
-            if (bindings.ContainsKey(hash))
+            int nameIndex = readOnly.Add(name);
+            if (TryGetBindingIndexByNameIndex(nameIndex, out _))
             {
                 throw new DuplicateBinding(name.ToString());
             }
 
-            Keyword keyword = new(hash);
-            Binding binding = new(name.ToString(), () =>
+            Keyword keyword = new(nameIndex);
+            Binding binding = new(readOnly.strings[nameIndex], () =>
             {
                 T value = read();
                 return Value.Serialize(value);
@@ -54,45 +139,71 @@ namespace Scripting
                 write(value.Deserialize<T>());
             });
 
-            bindings.Add(hash, binding);
+            RegisterBinding(nameIndex, binding);
             return keyword;
         }
 
         public Keyword DeclareBinding<T>(ReadOnlySpan<char> name, Func<T> read)
         {
-            ulong hash = ScriptingLibrary.GetHash(name);
-            if (bindings.ContainsKey(hash))
+            int nameIndex = readOnly.Add(name);
+            if (TryGetBindingIndexByNameIndex(nameIndex, out _))
             {
                 throw new DuplicateBinding(name.ToString());
             }
 
-            Keyword keyword = new(hash);
-            Binding binding = new(name.ToString(), () =>
+            Keyword keyword = new(nameIndex);
+            Binding binding = new(readOnly.strings[nameIndex], () =>
             {
                 T value = read();
                 return Value.Serialize(value);
             }, null);
 
-            bindings.Add(hash, binding);
+            RegisterBinding(nameIndex, binding);
             return keyword;
         }
 
         public Keyword DeclareBinding(ReadOnlySpan<char> name, Func<Value> read, Action<Value> write)
         {
-            ulong hash = ScriptingLibrary.GetHash(name);
-            if (bindings.ContainsKey(hash))
+            int nameIndex = readOnly.Add(name);
+            if (TryGetBindingIndexByNameIndex(nameIndex, out _))
             {
                 throw new DuplicateBinding(name.ToString());
             }
 
-            Keyword keyword = new(hash);
-            Binding binding = new(name.ToString(), read, write);
-            bindings.Add(hash, binding);
+            Keyword keyword = new(nameIndex);
+            Binding binding = new(readOnly.strings[nameIndex], read, write);
+            RegisterBinding(nameIndex, binding);
             return keyword;
+        }
+
+        public Keyword DeclareBinding(ReadOnlySpan<char> name, Func<Value> read)
+        {
+            int nameIndex = readOnly.Add(name);
+            if (TryGetBindingIndexByNameIndex(nameIndex, out _))
+            {
+                throw new DuplicateBinding(name.ToString());
+            }
+
+            Keyword keyword = new(nameIndex);
+            Binding binding = new(readOnly.strings[nameIndex], read, null);
+            RegisterBinding(nameIndex, binding);
+            return keyword;
+        }
+
+        public Keyword DeclareFunction(ReadOnlySpan<char> name, Func<Value[], Value> function)
+        {
+            Value nativeFuncValue = new(function);
+            return DeclareBinding(name, () => nativeFuncValue, null);
+        }
+
+        public Keyword DeclareFunction(ReadOnlySpan<char> name, Action<Value[]> function)
+        {
+            return DeclareFunction(name, args => { function(args); return Value.Null; });
         }
 
         public void ClearBindings()
         {
+            bindingIndices.Clear();
             bindings.Clear();
         }
 
@@ -108,24 +219,63 @@ namespace Scripting
                 return Value.Null;
             }
 
-            types.Clear();
-            variables.Clear();
-            Module module = Parser.Parse(sourceCode);
-            Value result = Value.Null;
-            Context context = new(this, module);
+            Module module = Parser.Parse(sourceCode, readOnly);
+            Resolver resolver = new(this);
+            resolver.Resolve(module);
+            currentModule = module;
+            rootScope = new Scope(null, module.localCount);
+            Context context = new(this, module, rootScope);
+            Result result = Result.Continue(Value.Null);
             for (int i = 0; i < module.statements.Count; i++)
             {
                 result = ExecuteStatement(module.statements[i], ref context);
-                if (context.returned)
+                if (result.returned)
                 {
-                    return result;
+                    break;
                 }
             }
 
-            return result;
+            return result.value;
         }
 
-        private Value ExecuteStatement(Statement statement, ref Context context)
+        public Value Call(ReadOnlySpan<char> sourceCode, ReadOnlySpan<char> functionName, Value[] arguments = null)
+        {
+            if (sourceCode.Length == 0)
+            {
+                return Value.Null;
+            }
+
+            Module module = Parser.Parse(sourceCode, readOnly);
+            Resolver resolver = new(this);
+            resolver.Resolve(module);
+            currentModule = module;
+            rootScope = new Scope(null, module.localCount);
+            Context context = new(this, module, rootScope);
+
+            for (int i = 0; i < module.statements.Count; i++)
+            {
+                Result result = ExecuteStatement(module.statements[i], ref context);
+                if (result.returned)
+                {
+                    break;
+                }
+            }
+
+            if (!readOnly.TryGetIndex(functionName, out int nameIndex) || !module.localSlots.TryGetValue(nameIndex, out int slotIndex))
+            {
+                throw new UnknownIdentifier(functionName.ToString(), context.State);
+            }
+
+            ref Value funcValue = ref rootScope.slots[slotIndex];
+            if (funcValue.type != Value.Type.Function || funcValue.functionValue == null)
+            {
+                throw new NotCallable(funcValue.type, context.State);
+            }
+
+            return InvokeFunction(funcValue.functionValue, arguments ?? Array.Empty<Value>(), ref context);
+        }
+
+        private Result ExecuteStatement(Statement statement, ref Context context)
         {
             context.current = statement;
             return statement switch
@@ -133,33 +283,28 @@ namespace Scripting
                 Return returnStatement => EvaluateReturn(returnStatement, ref context),
                 LocalVariable localStatement => EvaluateLocalVariable(localStatement, ref context),
                 TypeDefinition structure => EvaluateTypeDefinition(structure, ref context),
+                FunctionDefinition function => EvaluateFunctionDefinition(function, ref context),
                 If ifStatement => EvaluateIf(ifStatement, ref context),
                 Block block => EvaluateBlock(block, ref context),
-                ExpressionStatement expression => EvaluateExpression(expression.expression, ref context),
+                ExpressionStatement expression => Result.Continue(EvaluateExpression(expression.expression, ref context)),
                 _ => throw new NotImplementedException($"Unhandled statement type '{statement.GetType().Name}'"),
             };
         }
 
-        private Value EvaluateLocalVariable(LocalVariable localStatement, ref Context context)
+        private Result EvaluateLocalVariable(LocalVariable localStatement, ref Context context)
         {
             context.current = localStatement;
-            ulong hash = ScriptingLibrary.GetHash(localStatement.name);
-            if (variables.ContainsKey(hash))
-            {
-                throw new DuplicateLocalVariable(localStatement.name, context.State);
-            }
-
             Value value = Value.Null;
             if (localStatement.initializer is not null)
             {
                 value = EvaluateExpression(localStatement.initializer, ref context);
             }
 
-            variables.Add(hash, value);
-            return value;
+            context.scope.slots[localStatement.slotIndex] = value;
+            return Result.Continue(value);
         }
 
-        private Value EvaluateReturn(Return returnStatement, ref Context context)
+        private Result EvaluateReturn(Return returnStatement, ref Context context)
         {
             context.current = returnStatement;
             Value value = Value.Null;
@@ -168,8 +313,15 @@ namespace Scripting
                 value = EvaluateExpression(returnStatement.value, ref context);
             }
 
-            context.returned = true;
-            return value;
+            return Result.Returned(value);
+        }
+
+        private Result EvaluateFunctionDefinition(FunctionDefinition definition, ref Context context)
+        {
+            context.current = definition;
+            FunctionValue function = new(definition.symbol, context.scope);
+            context.scope.slots[definition.slotIndex] = new Value(function);
+            return Result.Continue(Value.Null);
         }
 
         private Value EvaluateExpression(Expression expression, ref Context context)
@@ -182,7 +334,8 @@ namespace Scripting
                 Text text => new(text.value),
                 Character character => new(character.value),
                 Boolean boolean => new(boolean.value),
-                Identifier identifier => EvaluateIdentifier(identifier, ref context),
+                LocalIdentifier local => EvaluateLocalIdentifier(local, ref context),
+                BindingIdentifier bindingId => EvaluateBindingIdentifier(bindingId),
                 Group group => EvaluateExpression(group.expression, ref context),
                 Unary unary => EvaluateUnary(unary, ref context),
                 Binary binary => EvaluateBinary(binary, ref context),
@@ -190,136 +343,20 @@ namespace Scripting
                 Construction construction => EvaluateConstruction(construction, ref context),
                 MemberAccess memberAccess => EvaluateMemberAccess(memberAccess, ref context),
                 MemberAssignment memberAssign => EvaluateMemberAssignment(memberAssign, ref context),
+                Call call => EvaluateCall(call, ref context),
                 _ => throw new NotImplementedException($"Unhandled expression type '{expression.GetType().Name}'"),
             };
-        }
-
-        private Value.Type EstimateType(Expression expression, ref Context context)
-        {
-            context.current = expression;
-            return expression switch
-            {
-                NullLiteral => Value.Type.Object,
-                Number number => long.TryParse(number.value, out _) ? Value.Type.Long : Value.Type.Double,
-                Text => Value.Type.String,
-                Character => Value.Type.Character,
-                Boolean => Value.Type.Boolean,
-                Identifier identifier => EstimateIdentifierType(identifier, ref context),
-                Group group => EstimateType(group.expression, ref context),
-                Unary unary => EstimateUnaryType(unary, ref context),
-                Binary binary => EstimateBinaryType(binary, ref context),
-                Assignment assignment => EstimateType(assignment.value, ref context),
-                Construction construction => Value.Type.Object,
-                MemberAccess memberAccess => EstimateMemberAccessType(memberAccess, ref context),
-                MemberAssignment memberAssign => EstimateType(memberAssign.value, ref context),
-                _ => throw new NotImplementedException($"Unhandled expression type '{expression.GetType().Name}'"),
-            };
-        }
-
-        private Value.Type EstimateIdentifierType(Identifier identifier, ref Context context)
-        {
-            context.current = identifier;
-            ulong hash = ScriptingLibrary.GetHash(identifier.value);
-            if (variables.TryGetValue(hash, out Value value))
-            {
-                return value.type;
-            }
-            if (bindings.TryGetValue(hash, out Binding binding))
-            {
-                return binding.read().type;
-            }
-
-            throw new UnknownIdentifier(identifier.value, context.State);
-        }
-
-        private Value.Type EstimateUnaryType(Unary unary, ref Context context)
-        {
-            context.current = unary;
-            if (unary.op == UnaryOperator.Not)
-            {
-                return Value.Type.Boolean;
-            }
-            else if (unary.op == UnaryOperator.Negate)
-            {
-                Value.Type operandType = EstimateType(unary.operand, ref context);
-                if (operandType == Value.Type.Long || operandType == Value.Type.Double)
-                {
-                    return operandType;
-                }
-            }
-
-            throw new NotImplementedException($"Cannot estimate type of unary operator '{unary.op}'");
-        }
-
-        private Value.Type EstimateBinaryType(Binary binary, ref Context context)
-        {
-            context.current = binary;
-            if (binary.op == BinaryOperator.And || binary.op == BinaryOperator.Or)
-            {
-                return Value.Type.Boolean;
-            }
-            else if (binary.op == BinaryOperator.Equal || binary.op == BinaryOperator.NotEqual)
-            {
-                return Value.Type.Boolean;
-            }
-            else if (binary.op == BinaryOperator.Add || binary.op == BinaryOperator.Subtract ||
-                     binary.op == BinaryOperator.Multiply || binary.op == BinaryOperator.Divide ||
-                     binary.op == BinaryOperator.Modulus)
-            {
-                Value.Type leftType = EstimateType(binary.left, ref context);
-                Value.Type rightType = EstimateType(binary.right, ref context);
-                if (leftType == Value.Type.String || rightType == Value.Type.String)
-                {
-                    return Value.Type.String;
-                }
-                else if (leftType == Value.Type.Double || rightType == Value.Type.Double)
-                {
-                    return Value.Type.Double;
-                }
-                else if (leftType == Value.Type.Long && rightType == Value.Type.Long)
-                {
-                    return Value.Type.Long;
-                }
-            }
-
-            throw new NotImplementedException($"Cannot estimate type of binary operator '{binary.op}'");
-        }
-
-        private Value.Type EstimateMemberAccessType(MemberAccess memberAccess, ref Context context)
-        {
-            context.current = memberAccess;
-            Value target = EvaluateExpression(memberAccess.target, ref context);
-            if (target.type == Value.Type.Object)
-            {
-                ObjectInstance structure = target.objectValue;
-                if (structure == null)
-                {
-                    throw new ReadingFieldOfNullInstance(memberAccess, target, context.State);
-                }
-                else if (!structure.type.ContainsField(memberAccess.member))
-                {
-                    throw new UnknownField(structure.type, memberAccess.member, context.State);
-                }
-                else
-                {
-                    return structure.type.GetField(memberAccess.member).type;
-                }
-            }
-            else
-            {
-                throw new AccessMemberNotSupported(memberAccess, target, context.State);
-            }
         }
 
         private static Value EvaluateNumber(Number number)
         {
-            if (long.TryParse(number.value, out long longValue))
+            if (number.isDouble)
             {
-                return new(longValue);
+                return new(number.doubleValue);
             }
             else
             {
-                return new(double.Parse(number.value));
+                return new(number.longValue);
             }
         }
 
@@ -327,18 +364,17 @@ namespace Scripting
         {
             context.current = assignment;
             Value value = EvaluateExpression(assignment.value, ref context);
-            ulong hash = ScriptingLibrary.GetHash(assignment.name);
-            if (variables.ContainsKey(hash))
+            if (assignment.target == AssignmentTarget.Local)
             {
-                variables[hash] = value;
+                Scope ancestor = context.scope.Ancestor(assignment.frameDepth);
+                ancestor.slots[assignment.slotIndex] = value;
                 return value;
             }
-
-            if (bindings.TryGetValue(hash, out Binding binding))
+            else if (assignment.target == AssignmentTarget.Binding)
             {
+                Binding binding = bindings[assignment.bindingIndex];
                 if (binding.write == null)
                 {
-                    //throw new CannotWriteToReadOnlyBinding(assignment.name, context.State);
                     throw new InvalidOperationException($"Binding '{binding.name}' is read-only and cannot be assigned to");
                 }
 
@@ -349,7 +385,7 @@ namespace Scripting
             throw new UnknownIdentifier(assignment.name, context.State);
         }
 
-        private Value EvaluateIf(If ifStatement, ref Context context)
+        private Result EvaluateIf(If ifStatement, ref Context context)
         {
             context.current = ifStatement;
             Value conditionValue = EvaluateExpression(ifStatement.condition, ref context);
@@ -362,17 +398,17 @@ namespace Scripting
                 return ExecuteStatement(ifStatement.elseBody, ref context);
             }
 
-            return Value.Null;
+            return Result.Continue(Value.Null);
         }
 
-        private Value EvaluateBlock(Block block, ref Context context)
+        private Result EvaluateBlock(Block block, ref Context context)
         {
             context.current = block;
-            Value result = Value.Null;
+            Result result = Result.Continue(Value.Null);
             foreach (Statement statement in block.statements)
             {
                 result = ExecuteStatement(statement, ref context);
-                if (context.returned)
+                if (result.returned)
                 {
                     return result;
                 }
@@ -381,35 +417,85 @@ namespace Scripting
             return result;
         }
 
+        private Value EvaluateCall(Call call, ref Context context)
+        {
+            context.current = call;
+            Value callee = EvaluateExpression(call.callee, ref context);
+
+            if (callee.type == Value.Type.NativeFunction)
+            {
+                Value[] nativeArguments = new Value[call.arguments.Count];
+                for (int i = 0; i < call.arguments.Count; i++)
+                {
+                    nativeArguments[i] = EvaluateExpression(call.arguments[i], ref context);
+                }
+
+                return callee.nativeFunctionValue(nativeArguments);
+            }
+
+            if (callee.type != Value.Type.Function || callee.functionValue == null)
+            {
+                throw new NotCallable(callee.type, context.State);
+            }
+
+            FunctionValue function = callee.functionValue;
+            FunctionSymbol symbol = function.symbol;
+            if (call.arguments.Count != symbol.ParameterCount)
+            {
+                throw new ArgumentCountMismatch(symbol.name, symbol.ParameterCount, call.arguments.Count, context.State);
+            }
+
+            Value[] arguments = new Value[call.arguments.Count];
+            for (int i = 0; i < call.arguments.Count; i++)
+            {
+                arguments[i] = EvaluateExpression(call.arguments[i], ref context);
+            }
+
+            return InvokeFunction(function, arguments, ref context);
+        }
+
+        private Value InvokeFunction(FunctionValue function, Value[] arguments, ref Context context)
+        {
+            FunctionSymbol symbol = function.symbol;
+            Scope callScope = new(function.closure, symbol.frameSize);
+            int parameterSlotOffset = 0;
+            if (symbol.isMethod)
+            {
+                callScope.slots[0] = function.boundSelf;
+                parameterSlotOffset = 1;
+            }
+
+            for (int i = 0; i < arguments.Length; i++)
+            {
+                callScope.slots[parameterSlotOffset + i] = arguments[i];
+            }
+
+            Scope outerScope = context.scope;
+            context.scope = callScope;
+            try
+            {
+                return EvaluateBlock(symbol.body, ref context).value;
+            }
+            finally
+            {
+                context.scope = outerScope;
+            }
+        }
+
         private Value EvaluateBinary(Binary binary, ref Context context)
         {
             context.current = binary;
-            Value left;
-            Value right;
             if (binary.op == BinaryOperator.And)
             {
-                left = EvaluateExpression(binary.left, ref context);
-                if (!left.boolValue)
-                {
-                    return left;
-                }
-
-                return EvaluateExpression(binary.right, ref context);
+                return EvaluateLogicalAnd(binary, ref context);
             }
             else if (binary.op == BinaryOperator.Or)
             {
-                left = EvaluateExpression(binary.left, ref context);
-                if (left.boolValue)
-                {
-                    return left;
-                }
-
-                return EvaluateExpression(binary.right, ref context);
+                return EvaluateLogicalOr(binary, ref context);
             }
 
-            // equality
-            left = EvaluateExpression(binary.left, ref context);
-            right = EvaluateExpression(binary.right, ref context);
+            Value left = EvaluateExpression(binary.left, ref context);
+            Value right = EvaluateExpression(binary.right, ref context);
             if (binary.op == BinaryOperator.Equal)
             {
                 return new(left.Equals(right));
@@ -419,47 +505,25 @@ namespace Scripting
                 return new(!left.Equals(right));
             }
 
-            // disallow between character and boolean
+            if (IsComparisonOperator(binary.op))
+            {
+                return EvaluateComparison(binary, left, right, ref context);
+            }
+
             if ((left.type == Value.Type.Boolean && right.type == Value.Type.Character) ||
                 (left.type == Value.Type.Character && right.type == Value.Type.Boolean))
             {
                 throw new OperatorNotSupportedBetweenBooleansAndCharacters(binary, context.State);
             }
 
-            // arithmetic with numerics
-            if (left.type == Value.Type.Long && right.type == Value.Type.Long)
+            if (left.type == Value.Type.Integer && right.type == Value.Type.Integer)
             {
-                long leftNumber = left.longValue;
-                long rightNumber = right.longValue;
-                Value result = binary.op switch
-                {
-                    BinaryOperator.Add => new(leftNumber + rightNumber),
-                    BinaryOperator.Subtract => new(leftNumber - rightNumber),
-                    BinaryOperator.Multiply => new(leftNumber * rightNumber),
-                    BinaryOperator.Divide => new(leftNumber / rightNumber),
-                    BinaryOperator.Modulus => new(leftNumber % rightNumber),
-                    _ => throw new OperatorNotSupportedBetweenNumbers(binary, context.State)
-                };
-
-                return result;
+                return EvaluateLongArithmetic(binary, left.longValue, right.longValue, ref context);
             }
 
-            if ((left.type == Value.Type.Double || left.type == Value.Type.Long) &&
-                (right.type == Value.Type.Double || right.type == Value.Type.Long))
+            if (IsNumeric(left.type) && IsNumeric(right.type))
             {
-                double leftNumber = left.type == Value.Type.Double ? left.doubleValue : left.longValue;
-                double rightNumber = right.type == Value.Type.Double ? right.doubleValue : right.longValue;
-                Value result = binary.op switch
-                {
-                    BinaryOperator.Add => new(leftNumber + rightNumber),
-                    BinaryOperator.Subtract => new(leftNumber - rightNumber),
-                    BinaryOperator.Multiply => new(leftNumber * rightNumber),
-                    BinaryOperator.Divide => new(leftNumber / rightNumber),
-                    BinaryOperator.Modulus => new(leftNumber % rightNumber),
-                    _ => throw new OperatorNotSupportedBetweenNumbers(binary, context.State)
-                };
-
-                return result;
+                return EvaluateDoubleArithmetic(binary, ToDouble(left), ToDouble(right), ref context);
             }
 
             if (binary.op == BinaryOperator.Add && (left.type == Value.Type.String || right.type == Value.Type.String))
@@ -468,6 +532,88 @@ namespace Scripting
             }
 
             throw new NotImplementedException($"Binary operator '{binary.op}' not implemented for types '{left.type}' and '{right.type}'");
+        }
+
+        private Value EvaluateLogicalAnd(Binary binary, ref Context context)
+        {
+            Value left = EvaluateExpression(binary.left, ref context);
+            if (!left.boolValue)
+            {
+                return left;
+            }
+
+            return EvaluateExpression(binary.right, ref context);
+        }
+
+        private Value EvaluateLogicalOr(Binary binary, ref Context context)
+        {
+            Value left = EvaluateExpression(binary.left, ref context);
+            if (left.boolValue)
+            {
+                return left;
+            }
+
+            return EvaluateExpression(binary.right, ref context);
+        }
+
+        private Value EvaluateComparison(Binary binary, Value left, Value right, ref Context context)
+        {
+            if (!IsNumeric(left.type) || !IsNumeric(right.type))
+            {
+                throw new OperatorNotSupportedBetweenNumbers(binary, context.State);
+            }
+
+            double leftNumber = ToDouble(left);
+            double rightNumber = ToDouble(right);
+            return binary.op switch
+            {
+                BinaryOperator.Greater => new(leftNumber > rightNumber),
+                BinaryOperator.Less => new(leftNumber < rightNumber),
+                BinaryOperator.GreaterEqual => new(leftNumber >= rightNumber),
+                BinaryOperator.LessEqual => new(leftNumber <= rightNumber),
+                _ => throw new OperatorNotSupportedBetweenNumbers(binary, context.State)
+            };
+        }
+
+        private Value EvaluateLongArithmetic(Binary binary, long left, long right, ref Context context)
+        {
+            return binary.op switch
+            {
+                BinaryOperator.Add => new(left + right),
+                BinaryOperator.Subtract => new(left - right),
+                BinaryOperator.Multiply => new(left * right),
+                BinaryOperator.Divide => new(left / right),
+                BinaryOperator.Modulus => new(left % right),
+                _ => throw new OperatorNotSupportedBetweenNumbers(binary, context.State)
+            };
+        }
+
+        private Value EvaluateDoubleArithmetic(Binary binary, double left, double right, ref Context context)
+        {
+            return binary.op switch
+            {
+                BinaryOperator.Add => new(left + right),
+                BinaryOperator.Subtract => new(left - right),
+                BinaryOperator.Multiply => new(left * right),
+                BinaryOperator.Divide => new(left / right),
+                BinaryOperator.Modulus => new(left % right),
+                _ => throw new OperatorNotSupportedBetweenNumbers(binary, context.State)
+            };
+        }
+
+        private static bool IsComparisonOperator(BinaryOperator op)
+        {
+            return op == BinaryOperator.Greater || op == BinaryOperator.Less || op == BinaryOperator.GreaterEqual || op == BinaryOperator.LessEqual;
+        }
+
+        private static bool IsNumeric(Value.Type type)
+        {
+            return type == Value.Type.Integer || type == Value.Type.Float;
+        }
+
+        private static double ToDouble(Value value)
+        {
+            return value.type == Value.Type.Float ? value.doubleValue : value.longValue;
         }
 
         private Value EvaluateUnary(Unary unary, ref Context context)
@@ -493,11 +639,11 @@ namespace Scripting
             }
             else if (unary.op == UnaryOperator.Negate)
             {
-                if (operand.type == Value.Type.Double)
+                if (operand.type == Value.Type.Float)
                 {
                     return new(-operand.doubleValue);
                 }
-                else if (operand.type == Value.Type.Long)
+                else if (operand.type == Value.Type.Integer)
                 {
                     return new(-operand.longValue);
                 }
@@ -512,80 +658,54 @@ namespace Scripting
             }
         }
 
-        private Value EvaluateIdentifier(Identifier identifier, ref Context context)
+        private Value EvaluateLocalIdentifier(LocalIdentifier identifier, ref Context context)
         {
             context.current = identifier;
-            ulong hash = ScriptingLibrary.GetHash(identifier.value);
-            if (variables.TryGetValue(hash, out Value value))
-            {
-                return value;
-            }
-
-            if (bindings.TryGetValue(hash, out Binding binding))
-            {
-                return binding.read();
-            }
-
-            throw new UnknownIdentifier(identifier.value, context.State);
+            Scope ancestor = context.scope.Ancestor(identifier.frameDepth);
+            return ancestor.slots[identifier.slotIndex];
         }
 
-        private Value EvaluateTypeDefinition(TypeDefinition definition, ref Context context)
+        private Value EvaluateBindingIdentifier(BindingIdentifier identifier)
+        {
+            return bindings[identifier.bindingIndex].read();
+        }
+
+        private Result EvaluateTypeDefinition(TypeDefinition definition, ref Context context)
         {
             context.current = definition;
-            ulong hash = ScriptingLibrary.GetHash(definition.name);
-            if (types.ContainsKey(hash))
-            {
-                throw new DuplicateType(definition, context.State);
-            }
-
-            int fieldCount = definition.fields.Length;
-            FieldSymbol[] fields = new FieldSymbol[fieldCount];
-            for (int i = 0; i < fieldCount; i++)
-            {
-                FieldDefinition fieldDefinition = definition.fields[i];
-                fields[i] = new(fieldDefinition.type, fieldDefinition.name);
-            }
-
-            TypeSymbol type = new(definition.name, fields);
-            types.Add(hash, type);
-            return default;
+            TypeValue value = new(definition.symbol, context.scope);
+            context.scope.slots[definition.slotIndex] = new Value(value);
+            return Result.Continue(Value.Null);
         }
 
         private Value EvaluateConstruction(Construction construction, ref Context context)
         {
             context.current = construction;
-            ulong hash = ScriptingLibrary.GetHash(construction.type);
-            if (!types.TryGetValue(hash, out TypeSymbol type))
+            Value typeValueWrapper = EvaluateExpression(construction.type, ref context);
+            if (typeValueWrapper.type != Value.Type.Type || typeValueWrapper.typeValue == null)
             {
-                throw new TryingToConstructUnknownType(construction.type, context.State);
+                string typeName = construction.type is Identifier id ? id.value : construction.type.ToString();
+                throw new NotATypeToConstruct(typeName, typeValueWrapper.type, context.State);
             }
 
+            TypeValue typeValue = typeValueWrapper.typeValue;
+            TypeSymbol type = typeValue.symbol;
             if (construction.arguments.Count > type.fields.Count)
             {
                 throw new TooManyArgumentsForConstructor(type, construction, context.State);
             }
 
-            // extra arguments are not allowed
+            ObjectInstance instance = new(type, typeValue.declaringScope);
             for (int i = 0; i < construction.arguments.Count; i++)
             {
-                (string field, Expression value) argument = construction.arguments[i];
-                if (type.TryGetField(argument.field, out FieldSymbol field))
+                (string field, Expression value) = construction.arguments[i];
+                int fieldIndex = type.IndexOfField(field);
+                if (fieldIndex == -1)
                 {
-                    // Value.Type expectedType = field.type;
-                    // Value.Type actualType = EstimateType(argument.value, ref context);
-                    // todo: check argument types match field types, which requires the ability to declare field types. later
+                    throw new UnknownField(type, field, context.State);
                 }
-                else
-                {
-                    throw new UnknownField(type, argument.field, context.State);
-                }
-            }
 
-            // todo: throw an exception if construction isnt possible
-            ObjectInstance instance = new(type);
-            foreach ((string field, Expression value) in construction.arguments)
-            {
-                instance.values[type.IndexOfField(field)] = EvaluateExpression(value, ref context);
+                instance.fields[fieldIndex] = EvaluateExpression(value, ref context);
             }
 
             return new(instance);
@@ -603,12 +723,32 @@ namespace Scripting
                     throw new ReadingFieldOfNullInstance(memberAccess, target, context.State);
                 }
 
-                if (!structure.type.ContainsField(memberAccess.member))
+                if (structure.typeSymbol.ContainsField(memberAccess.member))
                 {
-                    throw new UnknownField(structure.type, memberAccess.member, context.State);
+                    return structure.fields[structure.typeSymbol.IndexOfField(memberAccess.member)];
                 }
 
-                return structure.values[structure.type.IndexOfField(memberAccess.member)];
+                if (structure.typeSymbol.TryGetMethod(memberAccess.member, out FunctionSymbol method))
+                {
+                    return new Value(new FunctionValue(method, structure.declaringScope, target));
+                }
+
+                throw new UnknownField(structure.typeSymbol, memberAccess.member, context.State);
+            }
+            else if (target.type == Value.Type.Type)
+            {
+                TypeValue container = target.typeValue;
+                if (container == null)
+                {
+                    throw new AccessMemberNotSupported(memberAccess, target, context.State);
+                }
+
+                if (container.symbol.TryGetNestedType(memberAccess.member, out TypeSymbol nested))
+                {
+                    return new Value(new TypeValue(nested, container.declaringScope));
+                }
+
+                throw new UnknownField(container.symbol, memberAccess.member, context.State);
             }
             else
             {
@@ -628,19 +768,28 @@ namespace Scripting
                     throw new WritingFieldOfNullInstance(memberAssign, target, context.State);
                 }
 
-                if (instance.type.ContainsField(memberAssign.member))
+                if (instance.typeSymbol.ContainsField(memberAssign.member))
                 {
                     Value value = EvaluateExpression(memberAssign.value, ref context);
-                    instance.values[instance.type.IndexOfField(memberAssign.member)] = value;
-                    if (instance.callbacks.TryGetValue(ScriptingLibrary.GetHash(memberAssign.member), out Action<Value> callback))
+                    instance.fields[instance.typeSymbol.IndexOfField(memberAssign.member)] = value;
+                    if (instance.TryGetCallback(memberAssign.member, out Action<Value> callback))
                     {
                         callback(value);
+                    }
+
+                    if (memberAssign.target is BindingIdentifier bindingId)
+                    {
+                        Binding binding = bindings[bindingId.bindingIndex];
+                        if (binding.write != null)
+                        {
+                            binding.write(target);
+                        }
                     }
 
                     return value;
                 }
 
-                throw new UnknownField(instance.type, memberAssign.member, context.State);
+                throw new UnknownField(instance.typeSymbol, memberAssign.member, context.State);
             }
             else
             {
@@ -666,16 +815,16 @@ namespace Scripting
         {
             public readonly Interpreter interpreter;
             public readonly Module module;
-            public bool returned;
+            public Scope scope;
             public Node current;
 
             public readonly State State => new(interpreter, module, current);
 
-            public Context(Interpreter interpreter, Module module)
+            public Context(Interpreter interpreter, Module module, Scope scope)
             {
                 this.interpreter = interpreter;
                 this.module = module;
-                this.returned = false;
+                this.scope = scope;
                 current = null;
             }
         }

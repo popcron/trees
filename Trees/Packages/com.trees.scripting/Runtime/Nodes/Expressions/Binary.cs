@@ -5,8 +5,8 @@ namespace Scripting
 {
     public class Binary : Expression
     {
-        public readonly Expression left;
-        public readonly Expression right;
+        public Expression left;
+        public Expression right;
         public readonly BinaryOperator op;
 
         public override int ChildCount => 2;

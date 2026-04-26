@@ -4,7 +4,7 @@ Pieces of a colony simulation game, but not the game itself.
 
 ### Setup
 
-- Unity 6000.6.0a2
+- Unity 6000.6.0a3
 
 ### Scenes
 
@@ -13,6 +13,7 @@ Pieces of a colony simulation game, but not the game itself.
 - UI: verifying ui toolkit
 - Snowglobe: made it for testing goap, but didnt feel like writing new sets of goals/actions/facts
 - Test Scene: barebones, used for cleaning up prefabs and its basically a dummy room
+- Karts: testing vehicle physics
 
 # The Main Scene
 
@@ -34,9 +35,9 @@ present here too.
 
 ### Rigidbody NavMesh Agents
 
-https://github.com/user-attachments/assets/bda202f7-0e3e-43ff-82c9-4930fc8efa6e
-
 | In `Assets/Scripts/RigidbodyAgent.cs`
+
+https://github.com/user-attachments/assets/bda202f7-0e3e-43ff-82c9-4930fc8efa6e
 
 Call `agent.SetDestination()` as you normally would, and the rigidbody will try
 its best to reach.
@@ -48,9 +49,9 @@ This makes it possible for an agent to retry, but also get stuck in unrecoverabl
 
 ### Scripting
 
-![scripting](Docs/scripting.png)
-
 | In `Packages/com.trees.scripting`.
+
+![scripting](Docs/scripting.png)
 
 There is a scripting language, and its interpreted usually
 for UI or other small things. Places where a new C# component 
@@ -62,9 +63,9 @@ thats extended through `ITypeHandler`, and registered with `ScriptingLibrary`.
 
 ### UI
 
-![ui](Docs/ui.png)
+| In `Packages/com.trees.ui`
 
-| In `Assets/Scripts/UI`
+![ui](Docs/ui.png)
 
 Wanted to make use of UIToolkit and push its use, so I rewired it to
 be rendered manually. This way I can edit UI with it through game objects
@@ -73,9 +74,14 @@ authored in code, and with game objects. And scripting is integrated.
 
 It is kinda messy, I blame Unity and its also exploratory code.
 
+There are components to build UI in the scene like uGUI components, and
+API to render visual elements from anywhere.
+
 ### GOAP
 
-| In `Assets/Scripts/GOAP/`.
+| In `Packages/com.trees.goap`.
+
+![pathfinding](Docs/pathfinding.png)
 
 This version of GOAP has layers supported. So that a unit can look at X
 while moving towards Y. Submitted goals can also decompose themselves
@@ -100,6 +106,19 @@ simply just glue, it also represents the actual unit in a game.
 
 The `SubmitGoal()` is what should be used, then `Act()` is called in FixedUpdate
 to progress the actors internal state.
+
+### Vehicle Physics
+
+| In `Assets/Scripts/RaycastSpring.cs`
+
+![karts](Docs/karts.png)
+
+Theres enough code for convincing car physics. Can be tested in the Karts scene.
+
+### Unit Testing
+
+Beside the Trees folder there's a Unit Testing folder, in there is a regular C#
+project tailored just for unit testing the packages.
 
 ### What for?
 

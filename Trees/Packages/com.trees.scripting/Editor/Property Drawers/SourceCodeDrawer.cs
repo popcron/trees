@@ -25,8 +25,9 @@ namespace Scripting
             field.AddToClassList("source-code-field");
             field.BindProperty(property.FindPropertyRelative(nameof(SourceCode.content)));
             field.style.unityFontDefinition = EditorConstants.NoFontAssetDefinition();
-            field.style.minHeight = 60;
             field.style.whiteSpace = WhiteSpace.NoWrap;
+            SetHeight(field, field.value);
+            field.RegisterValueChangedCallback(evt => SetHeight(field, evt.newValue));
             field.label = preferredLabel;
             field.AddToClassList(BaseField<string>.alignedFieldUssClassName);
             if (genericArg == null)
@@ -51,6 +52,17 @@ namespace Scripting
             valueDrawer.style.flexGrow = 1;
             EditorConstants.SetupSourceCodeField(field, interpreter, updater);
             return field;
+        }
+
+        private static void SetHeight(TextField field, string value)
+        {
+            int lines = 1;
+            for (int i = 0; i < value.Length; i++)
+            {
+                if (value[i] == '\n') lines++;
+            }
+
+            field.style.height = Math.Clamp(lines + 1, 3, 17) * EditorConstants.LineHeight;
         }
 
         private static Func<string, bool> CreateStatusUpdater(Interpreter interpreter, Type type, VisualElement previewRoot, TextField sourceField)

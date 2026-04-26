@@ -10,7 +10,7 @@ namespace Scripting
 
         private static readonly List<Type> registeredTypeHandlers = new();
         private static readonly Dictionary<Type, SerializeDelegate> serializeFunctions = new();
-        private static readonly Dictionary<Type, TryDeserializeDelegate> tryDeserialize = new();
+        private static readonly Dictionary<Type, DeserializeDelegate> deserializeFunctions = new();
 
         static ScriptingLibrary()
         {
@@ -19,7 +19,7 @@ namespace Scripting
 
         private static void OptionalInitialization()
         {
-            Type initializerType = Type.GetType("InterpreterBindings, Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null");
+            Type initializerType = Type.GetType("ScriptingLoader, Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null");
             if (initializerType != null)
             {
                 RuntimeHelpers.RunClassConstructor(initializerType.TypeHandle);
@@ -55,18 +55,16 @@ namespace Scripting
 
             registeredTypeHandlers.Add(type);
             TypeHandler<T>.registered = true;
-            TypeHandler<T>.tryDeserialize = typeHandler.TryDeserialize;
+            TypeHandler<T>.deserialize = typeHandler.Deserialize;
 
             serializeFunctions.Add(type, (value) =>
             {
                 return typeHandler.Serialize((T)value);
             });
 
-            tryDeserialize.Add(type, (Value input, out object output) =>
+            deserializeFunctions.Add(type, (value) =>
             {
-                bool success = typeHandler.TryDeserialize(input, out T typedResult);
-                output = typedResult;
-                return success;
+                return typeHandler.Deserialize(value);
             });
         }
 
@@ -99,77 +97,64 @@ namespace Scripting
             return serializeFunctions[type](value);
         }
 
-        internal static bool TryDeserialize(Type type, Value input, out object result)
+        internal static object Deserialize(Type type, Value input)
         {
             if (type == typeof(bool))
             {
-                result = AsBoolean(input);
-                return true;
+                return AsBoolean(input);
             }
             else if (type == typeof(byte))
             {
-                result = (byte)AsLong(input);
-                return true;
+                return (byte)AsInteger64(input);
             }
             else if (type == typeof(sbyte))
             {
-                result = (sbyte)AsLong(input);
-                return true;
+                return (sbyte)AsInteger64(input);
             }
             else if (type == typeof(short))
             {
-                result = (short)AsLong(input);
-                return true;
+                return (short)AsInteger64(input);
             }
             else if (type == typeof(ushort))
             {
-                result = (ushort)AsLong(input);
-                return true;
+                return (ushort)AsInteger64(input);
             }
             else if (type == typeof(int))
             {
-                result = (int)AsLong(input);
-                return true;
+                return (int)AsInteger64(input);
             }
             else if (type == typeof(uint))
             {
-                result = (uint)AsLong(input);
-                return true;
+                return (uint)AsInteger64(input);
             }
             else if (type == typeof(long))
             {
-                result = AsLong(input);
-                return true;
+                return AsInteger64(input);
             }
             else if (type == typeof(ulong))
             {
-                result = (ulong)AsLong(input);
-                return true;
+                return (ulong)AsInteger64(input);
             }
             else if (type == typeof(float))
             {
-                result = (float)AsDouble(input);
-                return true;
+                return (float)AsFloat64(input);
             }
             else if (type == typeof(double))
             {
-                result = AsDouble(input);
-                return true;
+                return AsFloat64(input);
             }
             else if (type == typeof(string))
             {
-                result = input.ToString();
-                return true;
+                return input.ToString();
             }
             else if (type == typeof(char))
             {
-                result = AsCharacter(input);
-                return true;
+                return AsCharacter(input);
             }
 
             ThrowIfTypeHandlerNotRegistered(type);
 
-            return tryDeserialize[type](input, out result);
+            return deserializeFunctions[type](input);
         }
 
         internal static Value Serialize<T>(T value)
@@ -233,91 +218,78 @@ namespace Scripting
             throw new InvalidOperationException($"No type handler is registered for type {type} or any of its base types.");
         }
 
-        internal static bool TryDeserialize<T>(Value input, out T result)
+        internal static T Deserialize<T>(Value input)
         {
             Type type = typeof(T);
             if (type == typeof(bool))
             {
                 bool boolValue = AsBoolean(input);
-                result = Unsafe.As<bool, T>(ref boolValue);
-                return true;
+                return Unsafe.As<bool, T>(ref boolValue);
             }
             else if (type == typeof(byte))
             {
-                byte byteValue = (byte)AsLong(input);
-                result = Unsafe.As<byte, T>(ref byteValue);
-                return true;
+                byte byteValue = (byte)AsInteger64(input);
+                return Unsafe.As<byte, T>(ref byteValue);
             }
             else if (type == typeof(sbyte))
             {
-                sbyte sbyteValue = (sbyte)AsLong(input);
-                result = Unsafe.As<sbyte, T>(ref sbyteValue);
-                return true;
+                sbyte sbyteValue = (sbyte)AsInteger64(input);
+                return Unsafe.As<sbyte, T>(ref sbyteValue);
             }
             else if (type == typeof(short))
             {
-                short shortValue = (short)AsLong(input);
-                result = Unsafe.As<short, T>(ref shortValue);
-                return true;
+                short shortValue = (short)AsInteger64(input);
+                return Unsafe.As<short, T>(ref shortValue);
             }
             else if (type == typeof(ushort))
             {
-                ushort ushortValue = (ushort)AsLong(input);
-                result = Unsafe.As<ushort, T>(ref ushortValue);
-                return true;
+                ushort ushortValue = (ushort)AsInteger64(input);
+                return Unsafe.As<ushort, T>(ref ushortValue);
             }
             else if (type == typeof(int))
             {
-                int intValue = (int)AsLong(input);
-                result = Unsafe.As<int, T>(ref intValue);
-                return true;
+                int intValue = (int)AsInteger64(input);
+                return Unsafe.As<int, T>(ref intValue);
             }
             else if (type == typeof(uint))
             {
-                uint uintValue = (uint)AsLong(input);
-                result = Unsafe.As<uint, T>(ref uintValue);
-                return true;
+                uint uintValue = (uint)AsInteger64(input);
+                return Unsafe.As<uint, T>(ref uintValue);
             }
             else if (type == typeof(long))
             {
-                long longValue = AsLong(input);
-                result = Unsafe.As<long, T>(ref longValue);
-                return true;
+                long longValue = AsInteger64(input);
+                return Unsafe.As<long, T>(ref longValue);
             }
             else if (type == typeof(ulong))
             {
-                ulong ulongValue = (ulong)AsLong(input);
-                result = Unsafe.As<ulong, T>(ref ulongValue);
-                return true;
+                ulong ulongValue = (ulong)AsInteger64(input);
+                return Unsafe.As<ulong, T>(ref ulongValue);
             }
             else if (type == typeof(float))
             {
-                float floatValue = (float)AsDouble(input);
-                result = Unsafe.As<float, T>(ref floatValue);
-                return true;
+                float floatValue = (float)AsFloat64(input);
+                return Unsafe.As<float, T>(ref floatValue);
             }
             else if (type == typeof(double))
             {
-                double doubleValue = AsDouble(input);
-                result = Unsafe.As<double, T>(ref doubleValue);
-                return true;
+                double doubleValue = AsFloat64(input);
+                return Unsafe.As<double, T>(ref doubleValue);
             }
             else if (type == typeof(string))
             {
                 string stringValue = input.ToString();
-                result = Unsafe.As<string, T>(ref stringValue);
-                return true;
+                return Unsafe.As<string, T>(ref stringValue);
             }
             else if (type == typeof(char))
             {
                 char charValue = AsCharacter(input);
-                result = Unsafe.As<char, T>(ref charValue);
-                return true;
+                return Unsafe.As<char, T>(ref charValue);
             }
 
             ThrowIfTypeHandlerNotRegistered<T>();
 
-            return TypeHandler<T>.tryDeserialize(input, out result);
+            return TypeHandler<T>.deserialize(input);
         }
 
         private static char AsCharacter(Value value)
@@ -334,11 +306,11 @@ namespace Scripting
             {
                 return value.stringValue[0];
             }
-            else if (value.type == Value.Type.Double)
+            else if (value.type == Value.Type.Float)
             {
                 return (char)(int)value.doubleValue;
             }
-            else if (value.type == Value.Type.Long)
+            else if (value.type == Value.Type.Integer)
             {
                 return (char)value.longValue;
             }
@@ -366,11 +338,11 @@ namespace Scripting
             {
                 return value.stringValue.Equals("true", StringComparison.OrdinalIgnoreCase) || value.stringValue == "1";
             }
-            else if (value.type == Value.Type.Double)
+            else if (value.type == Value.Type.Float)
             {
                 return value.doubleValue > 0;
             }
-            else if (value.type == Value.Type.Long)
+            else if (value.type == Value.Type.Integer)
             {
                 return value.longValue > 0;
             }
@@ -384,7 +356,7 @@ namespace Scripting
             }
         }
 
-        private static long AsLong(Value value)
+        private static long AsInteger64(Value value)
         {
             if (value.type == Value.Type.Boolean)
             {
@@ -405,11 +377,11 @@ namespace Scripting
                     throw new InvalidOperationException($"Text value '{value.stringValue}' could not be parsed as an integer.");
                 }
             }
-            else if (value.type == Value.Type.Double)
+            else if (value.type == Value.Type.Float)
             {
                 return (long)value.doubleValue;
             }
-            else if (value.type == Value.Type.Long)
+            else if (value.type == Value.Type.Integer)
             {
                 return value.longValue;
             }
@@ -423,7 +395,7 @@ namespace Scripting
             }
         }
 
-        private static double AsDouble(Value value)
+        private static double AsFloat64(Value value)
         {
             if (value.type == Value.Type.Boolean)
             {
@@ -444,11 +416,11 @@ namespace Scripting
                     throw new InvalidOperationException($"Text value '{value.stringValue}' could not be parsed as a decimal.");
                 }
             }
-            else if (value.type == Value.Type.Double)
+            else if (value.type == Value.Type.Float)
             {
                 return value.doubleValue;
             }
-            else if (value.type == Value.Type.Long)
+            else if (value.type == Value.Type.Integer)
             {
                 return value.longValue;
             }
@@ -465,12 +437,12 @@ namespace Scripting
         private static class TypeHandler<T>
         {
             public static bool registered;
-            public static TryDeserializeDelegate<T> tryDeserialize;
+            public static DeserializeDelegate<T> deserialize;
         }
 
         private delegate Value SerializeDelegate<T>(T value);
-        private delegate bool TryDeserializeDelegate<T>(Value input, out T output);
+        private delegate T DeserializeDelegate<T>(Value input);
         private delegate Value SerializeDelegate(object value);
-        private delegate bool TryDeserializeDelegate(Value source, out object result);
+        private delegate object DeserializeDelegate(Value source);
     }
 }
